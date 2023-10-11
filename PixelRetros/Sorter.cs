@@ -42,46 +42,6 @@ public class Sorter<TPixel>
     }
 
 
-
-
-    public Span<IComparable> BuildSpanFromPixels() => BuildSpanFromPixels(0);
-
-    private Span<IComparable> BuildSpanFromPixels(int scanIdx)
-    {
-        if (SortDirection == SortDirection.Horizontal)
-        {
-            return new Span<IComparable>(_pixels?.Chunk(_bmpData.Width).ElementAt(scanIdx));
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-
-    private unsafe delegate TPixel* PixelSelector(int index, Span<TPixel> range);
-    private unsafe delegate int IndexSelector(int index);
-
-
-    [Benchmark]
-    public unsafe void HorizontalOuter()
-    {
-        for (int row = 0; row < _bmpData.Height - 1; row++)
-        {
-            int bytes = _bmpData.Stride;
-            void* ptr = (void*)(_bmpData.Scan0 + _bmpData.Stride * row);
-            var span = new Span<TPixel>(ptr, bytes);
-
-            InsertionSort(
-                keys: span,
-                comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR()
-                //step: 1,
-                //from: 0,
-                //to: span.Length
-            );
-        }
-    }
-
     [Benchmark]
     public unsafe void HorizontalInner()
     {
@@ -104,32 +64,33 @@ public class Sorter<TPixel>
 
     public unsafe void StdSortComparer()
     {
+        void* ptr = (_bmpData.Scan0).ToPointer();
+        int bytes = _bmpData.Height * _bmpData.Stride;
+        var span = new Span<TPixel>(ptr, bytes);
+
         if (SortDirection == SortDirection.Horizontal)
         {
-            for (int row = 0; row < _bmpData.Height-1; row++)
+            for (int row = 0; row < _bmpData.Height - 1; row++)
             {
-                int bytes = _bmpData.Stride;
-                void* ptr = (_bmpData.Scan0 + bytes * row).ToPointer();
-                var span = new Span<TPixel>(ptr, bytes);
-
-                InsertionSort(span, (IComparer<TPixel>)new Comparer24bit_soA_stR());
-                //IntrospectiveSort(span, (IComparer<TPixel>)new Comparer24bit_soA_stR());
+                InsertionSort(
+                    keys: span,
+                    comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
+                    step: 1,
+                    from: _bmpData.Width * row,
+                    to: (row + 1) * _bmpData.Width
+                );
             }
         }
         else
         {
-            void* ptr = (_bmpData.Scan0).ToPointer();
-            int bytes = _bmpData.Height * _bmpData.Stride;
-            var span = new Span<TPixel>(ptr, bytes);
-
-
             for (int column = 0; column < _bmpData.Width; column++)
             {
-                int step = _bmpData.Width;
-                int from = 0 + column;
-                int to = _bmpData.Height * _bmpData.Width + column;
-
-                InsertionSort(span, (IComparer<TPixel>)new Comparer24bit_soA_stR(), step, from, to);
+                InsertionSort(
+                    keys: span,
+                    comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
+                    step: _bmpData.Width,
+                    from: column,
+                    to: _bmpData.Height * _bmpData.Width + column);
             }
         }
     }
