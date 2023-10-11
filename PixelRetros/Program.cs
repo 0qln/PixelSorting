@@ -19,20 +19,26 @@ static class Program
 
     static void Main()
     {
+        // init
+        Bitmap bmp = new Bitmap(IMG);
+        var sorter = new Sorter<Pixel_24bit>(GetBmpData(bmp));
+
+
         // benchmark
-        //Benchmark.MaxTimePerMethod = TimeSpan.FromSeconds(10);
+        //Benchmark.WarmupTimePerMethod = TimeSpan.FromSeconds(10);
+        //Benchmark.BenchmarkTimePerMethod = TimeSpan.FromSeconds(10);
         //Benchmark.Run<SorterBenchmark>();
 
 
+        // testing
+        sorter.HeapTesting(new Comparer24bit.Descending.Blue());
+
 
         // save sorted image
-        Bitmap bmp = new Bitmap(IMG);
-        var sorter = new Sorter<Pixel_24bit>(GetBmpData(bmp)) { SortDirection = SortDirection.Vertical };
-        sorter.StdSortComparer();
-        bmp.UnlockBits(sorter.BitmapData);
-        bmp.Save(IMG_SORTED);
+        //sorter.StdSortComparer(new Comparer24bit.Ascending.Blue());
+        //bmp.UnlockBits(sorter.BitmapData);
+        //bmp.Save(IMG_SORTED);
     }
-
 
 
     class SorterBenchmark : Sorter<Pixel_24bit> 

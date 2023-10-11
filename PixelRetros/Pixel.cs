@@ -4,22 +4,47 @@
 public record struct Pixel_24bit(byte B, byte G, byte R);
 
 
-// (so = SortOrder)
-// (st = SortType)
-public class Comparer24bit_soA_stR : IComparer<Pixel_24bit>
+public class Comparer24bit
 {
-    public int Compare(Pixel_24bit a, Pixel_24bit b)
+    public class Descending
     {
-        return a.R.CompareTo(b.R);
+        public class Red : IComparer<Pixel_24bit>
+        {
+            public int Compare(Pixel_24bit a, Pixel_24bit b)
+            {
+                return b.R.CompareTo(a.R);
+            }
+        }
+
+        public class Blue : IComparer<Pixel_24bit>
+        {
+            public int Compare(Pixel_24bit a, Pixel_24bit b)
+            {
+                return b.B.CompareTo(a.B);
+            }
+        }
+    }
+
+    public class Ascending
+    {
+        public class Red : IComparer<Pixel_24bit>
+        {
+            public int Compare(Pixel_24bit a, Pixel_24bit b)
+            {
+                return a.R.CompareTo(b.R);
+            }
+        }
+
+        public class Blue : IComparer<Pixel_24bit>
+        {
+            public int Compare(Pixel_24bit a, Pixel_24bit b)
+            {
+                return a.B.CompareTo(b.B);
+            }
+        }
     }
 }
-public class Comparer24bit_soA_stB : IComparer<Pixel_24bit>
-{
-    public int Compare(Pixel_24bit a, Pixel_24bit b)
-    {
-        return a.B.CompareTo(b.B);
-    }
-}
+
 
 public enum SortDirection
 {

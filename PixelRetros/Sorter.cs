@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 namespace SortingLibrary;
 
 public class Sorter<TPixel>
+    where TPixel : struct
 {
     // This is the threshold where Introspective sort switches to Insertion sort.
     // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
@@ -19,9 +20,7 @@ public class Sorter<TPixel>
     public const int IntrosortSizeThreshold = 16;
 
 
-    public SortType SortType { get; set; } = SortType.Red;
     public SortDirection SortDirection { get; set; } = SortDirection.Horizontal;
-    public SortOrder SortOrder { get; set; } = SortOrder.Ascending;
     public BitmapData BitmapData => _bmpData;
 
     private readonly int _bytesPerPixel;
@@ -53,7 +52,7 @@ public class Sorter<TPixel>
         {
             InsertionSort(
                 keys: span,
-                comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
+                comparer: (IComparer<TPixel>)new Comparer24bit.Ascending.Blue(),
                 step: 1,
                 from: _bmpData.Width * row,
                 to: (row + 1) * _bmpData.Width
@@ -61,25 +60,71 @@ public class Sorter<TPixel>
         }
     }
 
+    public unsafe void HeapTesting(IComparer<TPixel> comparer)
+    {
+        int n = 10;
+        int idx = 0;
 
-    public unsafe void StdSortComparer()
+        void* ptr = (_bmpData.Scan0).ToPointer();
+        int bytes = _bmpData.Height * _bmpData.Width;
+        Span<TPixel> span = new Span<TPixel>(ptr, bytes);
+
+
+        void Reset(Span<TPixel> span)
+        {
+            span = new Span<TPixel>(ptr, bytes);
+            for (byte i = 0; i < n - 1; i++)
+            {
+                span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
+            }
+        }
+        void Print(Span<TPixel> span)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                Console.WriteLine(span[i]);
+            }
+            Console.WriteLine();
+        }
+
+        Reset(span);
+        Print(span);
+
+
+        Reset(span);
+        HeapSort_OG(span.Slice(0, n), comparer);
+        Print(span);
+
+
+        Reset(span);
+        HeapSort(span, comparer, 1, 0, n);
+        Print(span);
+
+        //Reset(span);
+        //HeapSort(span, comparer, 1, 1, n);
+        //Print(span);
+
+    }
+
+    public unsafe void StdSortComparer(IComparer<TPixel> comparer)
     {
         void* ptr = (_bmpData.Scan0).ToPointer();
-        int bytes = _bmpData.Height * _bmpData.Stride;
+        int bytes = _bmpData.Height * _bmpData.Width;
         var span = new Span<TPixel>(ptr, bytes);
 
         if (SortDirection == SortDirection.Horizontal)
         {
-            for (int row = 0; row < _bmpData.Height - 1; row++)
+            for (int row = 0; row < _bmpData.Height; row++)
             {
-                InsertionSort(
-                    keys: span,
-                    comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
+                HeapSort(
+                    span: span,
+                    comparer: comparer,
                     step: 1,
                     from: _bmpData.Width * row,
                     to: (row + 1) * _bmpData.Width
                 );
             }
+            
         }
         else
         {
@@ -87,7 +132,7 @@ public class Sorter<TPixel>
             {
                 InsertionSort(
                     keys: span,
-                    comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
+                    comparer: comparer,
                     step: _bmpData.Width,
                     from: column,
                     to: _bmpData.Height * _bmpData.Width + column);
@@ -95,7 +140,7 @@ public class Sorter<TPixel>
         }
     }
 
-
+    #region Introspective Sort
     private void IntrospectiveSort(Span<TPixel> keys, IComparer<TPixel> comparer)
     {
         if (keys.Length > 1)
@@ -129,14 +174,14 @@ public class Sorter<TPixel>
                     return;
                 }
 
-                throw new NotImplementedException();
-                //InsertionSort(keys.Slice(0, partitionSize), comparer);
+                InsertionSort(keys.Slice(0, partitionSize), comparer);
                 return;
             }
 
             if (depthLimit == 0)
             {
-                HeapSort(keys.Slice(0, partitionSize), comparer);
+                throw new NotImplementedException();
+                //HeapSort(keys.Slice(0, partitionSize), comparer);
                 return;
             }
             depthLimit--;
@@ -148,7 +193,6 @@ public class Sorter<TPixel>
             hi = p - 1;
         }
     }
-
 
     private static int PickPivotAndPartition(Span<TPixel> keys, IComparer<TPixel> comparer)
     {
@@ -185,42 +229,103 @@ public class Sorter<TPixel>
         return left;
     }
 
-    private static void HeapSort(Span<TPixel> keys, IComparer<TPixel> comparer)
+    #endregion
+
+
+    #region Heap Sort
+    #region Original
+    private static void HeapSort_OG(Span<TPixel> span, IComparer<TPixel> comparer)
     {
-        int n = keys.Length;
+        int n = span.Length;
         for (int i = n >> 1; i >= 1; i--)
         {
-            DownHeap(keys, i, n, 0, comparer);
+            DownHeap_OG(span, i, n, 0, comparer);
         }
 
         for (int i = n; i > 1; i--)
         {
-            Swap(keys, 0, i - 1);
-            DownHeap(keys, 1, i - 1, 0, comparer);
+            Swap(span, 0, i - 1);
+            DownHeap_OG(span, 1, i - 1, 0, comparer);
         }
     }
-
-    private static void DownHeap(Span<TPixel> keys, int i, int n, int lo, IComparer<TPixel> comparer)
+    private static void DownHeap_OG(Span<TPixel> span, int i, int n, int lo, IComparer<TPixel> comparer)
     {
-        TPixel d = keys[lo + i - 1];
+        TPixel d = span[lo + i - 1];
 
         while (i <= n >> 1)
         {
             int child = 2 * i;
-            if (child < n && comparer.Compare(keys[lo + child - 1], keys[lo + child]) < 0)
+            if (child < n && comparer.Compare(span[lo + child - 1], span[lo + child]) < 0)
             {
                 child++;
             }
 
-            if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
+            if (!(comparer.Compare(d, span[lo + child - 1]) < 0))
+            {
                 break;
+            }
 
-            keys[lo + i - 1] = keys[lo + child - 1];
+            span[lo + i - 1] = span[lo + child - 1];
             i = child;
         }
 
-        keys[lo + i - 1] = d;
+        span[lo + i - 1] = d;
     }
+    #endregion
+
+
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+        int n = to;
+        for (int i = n >> 1; i >= 1; i--)
+        {
+            DownHeap(
+                span,
+                i, n, 0,
+                comparer,
+                step: step, from: from, to: to);
+        }
+
+        for (int i = n; i > 1; i--)
+        {
+            Swap(span, 0, i - 1);
+
+            DownHeap(
+                span: span,
+                i: 1, n: i - 1, lo: 0,
+                comparer: comparer,
+                step: step, from: from, to: to);
+        }
+    }
+    private static void DownHeap(Span<TPixel> span, int i, int n, int lo, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+        TPixel d = span[lo + i - 1];
+
+        while (i <= n / 2)
+        {
+            int child = 2 * i;
+            if (child < n && comparer.Compare(span[lo + child - 1], span[lo + child]) < 0)
+            {
+                child += 1;
+            }
+
+            if (comparer.Compare(d, span[lo + child - 1]) >= 0)
+            {
+                break;
+            }
+
+            span[lo + i - 1] = span[lo + child - 1];
+
+            i = child;
+        }
+
+        span[lo + i - 1] = d;
+    }
+
+    #endregion
+
+
+    #region Insertion Sort
 
     /// <summary>
     /// 
@@ -263,7 +368,10 @@ public class Sorter<TPixel>
             keys[j + 1] = t;
         }
     }
+    #endregion
 
+
+    #region Utilities
     private unsafe static void SwapIfGreaterWithValues(Span<TPixel> keys, IComparer<TPixel> comparer, int i, int j)
     {
         if (comparer.Compare(keys[i], keys[j]) > 0)
@@ -279,4 +387,5 @@ public class Sorter<TPixel>
         keys[i] = keys[j];
         keys[j] = k;
     }
+    #endregion
 }
