@@ -66,19 +66,15 @@ public class Sorter<TPixel>
     [Benchmark]
     public unsafe void HorizontalOuter()
     {
-        for (int row = 0; row < _bmpData.Height - 1; row++)
+        for (int row = 0; row < _bmpData.Height; row++)
         {
             int bytes = _bmpData.Stride;
             void* ptr = (void*)(_bmpData.Scan0 + _bmpData.Stride * row);
-            var span = new Span<TPixel>(ptr, bytes);
+            var span = new Span<TPixel>(ptr, bytes / _bytesPerPixel);
 
             InsertionSort(
                 keys: span,
-                comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR()
-                //step: 1,
-                //from: 0,
-                //to: span.Length
-            );
+                comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR());
         }
     }
 
@@ -87,17 +83,16 @@ public class Sorter<TPixel>
     {
         int bytes = _bmpData.Stride * _bmpData.Height;
         void* ptr = (void*)_bmpData.Scan0;
-        var span = new Span<TPixel>(ptr, bytes);
+        var span = new Span<TPixel>(ptr, bytes / _bytesPerPixel);
 
-        for (int row = 0; row < _bmpData.Height - 1; row++)
+        for (int row = 0; row < _bmpData.Height; row++)
         {
             InsertionSort(
                 keys: span,
                 comparer: (IComparer<TPixel>)new Comparer24bit_soA_stR(),
                 step: 1,
                 from: _bmpData.Width * row,
-                to: (row + 1) * _bmpData.Width
-            );
+                to: (row + 1) * _bmpData.Width);
         }
     }
 
