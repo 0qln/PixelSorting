@@ -62,42 +62,32 @@ public class Sorter<TPixel>
 
     public unsafe void HeapTesting(IComparer<TPixel> comparer)
     {
-        int n = 10;
-        int idx = 0;
-
-        void* ptr = (_bmpData.Scan0).ToPointer();
-        int bytes = _bmpData.Height * _bmpData.Width;
-        Span<TPixel> span = new Span<TPixel>(ptr, bytes);
+        int length = 10;
+        Span<TPixel> span;
 
 
-        void Reset(Span<TPixel> span)
-        {
-            span = new Span<TPixel>(ptr, bytes);
-            for (byte i = 0; i < n - 1; i++)
-            {
-                span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
-            }
-        }
+
         void Print(Span<TPixel> span)
         {
-            for (int i = 0; i < n; i++)
-            {
+            for (int i = 0; i < length; i++)
                 Console.WriteLine(span[i]);
-            }
+            
             Console.WriteLine();
         }
 
-        Reset(span);
+
+        int step = 2;
+
+        span = new Span<TPixel>((void*)_bmpData.Scan0, length);
+        for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
         Print(span);
 
 
-        Reset(span);
-        HeapSort_OG(span.Slice(0, n), comparer);
-        Print(span);
+        span = new Span<TPixel>((void*)_bmpData.Scan0, length);
+        for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
 
+        HeapSort(span, comparer, 0, 10, step);
 
-        Reset(span);
-        HeapSort(span, comparer, 1, 0, n);
         Print(span);
 
         //Reset(span);
@@ -109,19 +99,15 @@ public class Sorter<TPixel>
 
     private delegate int IndexSelector(int i);
 
+
     [Benchmark]
     public unsafe void BenchmarkSort()
     {
-        StdSortComparer((IComparer<TPixel>)new Comparer24bit.Ascending.Blue());
-    }
-    [Benchmark]
-    public unsafe void BenchmarkSortInlined()
-    {
-        StdSortComparer((IComparer<TPixel>)new Comparer24bit.Ascending.BlueInlined());
+        StdSort((IComparer<TPixel>)new Comparer24bit.Ascending.Blue());
     }
 
 
-    public unsafe void StdSortComparer(IComparer<TPixel> comparer)
+    public unsafe void StdSort(IComparer<TPixel> comparer)
     {
         void* ptr = (_bmpData.Scan0).ToPointer();
         int bytes = _bmpData.Height * _bmpData.Width;
@@ -246,6 +232,7 @@ public class Sorter<TPixel>
     private static void HeapSort_OG(Span<TPixel> span, IComparer<TPixel> comparer)
     {
         int n = span.Length;
+
         for (int i = n >> 1; i >= 1; i--)
         {
             DownHeap_OG(span, i, n, 0, comparer);
@@ -283,52 +270,45 @@ public class Sorter<TPixel>
     #endregion
 
 
-    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int step, int from, int to)
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int from, int to, int step)
     {
-        int n = to;
-        for (int i = n >> 1; i >= 1; i--)
+        // build max heap
+        for (int i = to >> 1; i >= from + 1; i -= 1)
         {
-            DownHeap(
-                span,
-                i, n, 0,
-                comparer,
-                step: step, from: from, to: to);
+            DownHeap(span, i, to - from, from, comparer, step);
         }
 
-        for (int i = n; i > 1; i--)
+        // build sorted span from heap
+        for (int i = to; i >= from + 1; i -= 1)
         {
-            Swap(span, 0, i - 1);
-
-            DownHeap(
-                span: span,
-                i: 1, n: i - 1, lo: 0,
-                comparer: comparer,
-                step: step, from: from, to: to);
+            Swap(span, from, i - 1);
+            DownHeap(span, 1, i - 1 - from, from, comparer, step);
         }
     }
-    private static void DownHeap(Span<TPixel> span, int i, int n, int lo, IComparer<TPixel> comparer, int step, int from, int to)
+    private static void DownHeap(Span<TPixel> span, int i, int to, int from, IComparer<TPixel> comparer, int step)
     {
-        TPixel d = span[lo + i - 1];
+        TPixel d = span[from + i - 1];
 
-        while (i <= n / 2)
+        while (i <= to >> 1)
         {
-            int child = 2 * i;
-            if (child < n && comparer.Compare(span[lo + child - 1], span[lo + child]) < 0)
+            int child = i << 1;
+
+            if (child < to && comparer.Compare(span[from + child - 1], span[from + child]) < 0)
             {
                 child += 1;
             }
 
-            if (comparer.Compare(d, span[lo + child - 1]) >= 0)
+            if (comparer.Compare(d, span[from + child - 1]) >= 0)
             {
                 break;
             }
 
-            span[lo + i - 1] = span[lo + child - 1];
+            span[from + i - 1] = span[from + child - 1];
 
             i = child;
         }
 
-        span[lo + i - 1] = d;
+        span[from + i - 1] = d;
     }
 
     #endregion

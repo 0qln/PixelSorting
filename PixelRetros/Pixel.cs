@@ -45,15 +45,6 @@ public class Comparer24bit
             }
         }
 
-        
-        public class BlueInlined : IComparer<Pixel_24bit>
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Compare(Pixel_24bit a, Pixel_24bit b)
-            {
-                return a.B.CompareTo(b.B);
-            }
-        }
     }
 }
 
