@@ -25,19 +25,20 @@ static class Program
 
 
         // benchmark
-        //Benchmark.WarmupTimePerMethod = TimeSpan.FromSeconds(10);
-        //Benchmark.BenchmarkTimePerMethod = TimeSpan.FromSeconds(10);
-        //Benchmark.Run<SorterBenchmark>();
+        Benchmark.WarmupTime = TimeSpan.FromSeconds(8);
+        Benchmark.BenchmarkTime = TimeSpan.FromSeconds(12);
+        Benchmark.Run<SorterBenchmark>();
 
 
         // testing
-        sorter.HeapTesting(new Comparer24bit.Descending.Blue());
+        //sorter.HeapTesting(new Comparer24bit.Descending.Blue());
 
 
-        // save sorted image
-        //sorter.StdSortComparer(new Comparer24bit.Ascending.Blue());
-        //bmp.UnlockBits(sorter.BitmapData);
-        //bmp.Save(IMG_SORTED);
+        //save sorted image
+        sorter.SortDirection = SortDirection.Vertical;
+        sorter.StdSortComparer(new Comparer24bit.Descending.Blue());
+        bmp.UnlockBits(sorter.BitmapData);
+        bmp.Save(IMG_SORTED);
     }
 
 

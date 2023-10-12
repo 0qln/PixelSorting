@@ -1,4 +1,6 @@
-﻿namespace SortingLibrary;
+﻿using System.Runtime.CompilerServices;
+
+namespace SortingLibrary;
 
 
 public record struct Pixel_24bit(byte B, byte G, byte R);
@@ -37,6 +39,16 @@ public class Comparer24bit
 
         public class Blue : IComparer<Pixel_24bit>
         {
+            public int Compare(Pixel_24bit a, Pixel_24bit b)
+            {
+                return a.B.CompareTo(b.B);
+            }
+        }
+
+        
+        public class BlueInlined : IComparer<Pixel_24bit>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Compare(Pixel_24bit a, Pixel_24bit b)
             {
                 return a.B.CompareTo(b.B);

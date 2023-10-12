@@ -2,6 +2,7 @@
 
 using PixelRetros.Benchmark;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Numerics;
@@ -41,7 +42,6 @@ public class Sorter<TPixel>
     }
 
 
-    [Benchmark]
     public unsafe void HorizontalInner()
     {
         int bytes = _bmpData.Stride * _bmpData.Height;
@@ -106,37 +106,46 @@ public class Sorter<TPixel>
 
     }
 
+
+    private delegate int IndexSelector(int i);
+
+    [Benchmark]
+    public unsafe void BenchmarkSort()
+    {
+        StdSortComparer((IComparer<TPixel>)new Comparer24bit.Ascending.Blue());
+    }
+    [Benchmark]
+    public unsafe void BenchmarkSortInlined()
+    {
+        StdSortComparer((IComparer<TPixel>)new Comparer24bit.Ascending.BlueInlined());
+    }
+
+
     public unsafe void StdSortComparer(IComparer<TPixel> comparer)
     {
         void* ptr = (_bmpData.Scan0).ToPointer();
         int bytes = _bmpData.Height * _bmpData.Width;
         var span = new Span<TPixel>(ptr, bytes);
 
+        int step;
+        IndexSelector from, to;
+
         if (SortDirection == SortDirection.Horizontal)
         {
-            for (int row = 0; row < _bmpData.Height; row++)
-            {
-                HeapSort(
-                    span: span,
-                    comparer: comparer,
-                    step: 1,
-                    from: _bmpData.Width * row,
-                    to: (row + 1) * _bmpData.Width
-                );
-            }
-            
+            step = 1;
+            from = row => row * _bmpData.Width;
+            to = row => (row+1) * _bmpData.Width;            
         }
-        else
+        else // vertical
         {
-            for (int column = 0; column < _bmpData.Width; column++)
-            {
-                InsertionSort(
-                    keys: span,
-                    comparer: comparer,
-                    step: _bmpData.Width,
-                    from: column,
-                    to: _bmpData.Height * _bmpData.Width + column);
-            }
+            step = _bmpData.Width;
+            from = column => column;
+            to = column => column + _bmpData.Height * _bmpData.Width;
+        }
+
+        for (int i = 0; i < (SortDirection == SortDirection.Horizontal ? _bmpData.Height : _bmpData.Width); i++)
+        {
+            InsertionSort(span, comparer, step, from(i), to(i));
         }
     }
 
