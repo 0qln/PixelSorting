@@ -60,24 +60,50 @@ public class Sorter<TPixel>
         }
     }
 
-    public unsafe void HeapTesting(IComparer<TPixel> comparer)
+    public unsafe void IntroTesting(IComparer<TPixel> comparer)
     {
-        int length = 10;
+        int length = 50;
         Span<TPixel> span;
 
+        int step = 3;
 
 
         void Print(Span<TPixel> span)
         {
             for (int i = 0; i < length; i++)
-                Console.WriteLine(span[i]);
+                Console.WriteLine((span[i] + "  " + ((Pixel_24bit)(object)span[i]).R % step).PadLeft(50));
+
+            Console.WriteLine();
+        }
+
+        span = new Span<TPixel>((void*)_bmpData.Scan0, length);
+        for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
+        Print(span);
+
+
+        span = new Span<TPixel>((void*)_bmpData.Scan0, length);
+        for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
+
+        IntrospectiveSort(span, comparer, step);
+
+        Print(span);
+    }
+    public unsafe void HeapTesting(IComparer<TPixel> comparer)
+    {
+        int length = 10;
+        Span<TPixel> span;
+
+        int step = 2;
+
+
+        void Print(Span<TPixel> span)
+        {
+            for (int i = 0; i < length; i++)
+                Console.WriteLine(span[i] + "  " + ((Pixel_24bit)(object)span[i]).R % step);
             
             Console.WriteLine();
         }
 
-
-        int step = 2;
-
         span = new Span<TPixel>((void*)_bmpData.Scan0, length);
         for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
         Print(span);
@@ -86,13 +112,9 @@ public class Sorter<TPixel>
         span = new Span<TPixel>((void*)_bmpData.Scan0, length);
         for (byte i = 0; i < length; i++) span[i] = (TPixel)(object)new Pixel_24bit(i, i, i);
 
-        HeapSort(span, comparer, 0, 10, step);
+        HeapSort(span, comparer, step, 0, 10);
 
         Print(span);
-
-        //Reset(span);
-        //HeapSort(span, comparer, 1, 1, n);
-        //Print(span);
 
     }
 
@@ -136,6 +158,7 @@ public class Sorter<TPixel>
     }
 
     #region Introspective Sort
+    #region Normal
     private void IntrospectiveSort(Span<TPixel> keys, IComparer<TPixel> comparer)
     {
         if (keys.Length > 1)
@@ -175,8 +198,7 @@ public class Sorter<TPixel>
 
             if (depthLimit == 0)
             {
-                throw new NotImplementedException();
-                //HeapSort(keys.Slice(0, partitionSize), comparer);
+                HeapSort(keys.Slice(0, partitionSize), comparer);
                 return;
             }
             depthLimit--;
@@ -223,13 +245,321 @@ public class Sorter<TPixel>
         }
         return left;
     }
+    #endregion
+
+
+    #region Step, from, and to parameters
+    private void IntrospectiveSort(Span<TPixel> keys, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+        int d = to - from;
+        uint n = (uint)(d / step);
+        var depthLimit = 2 * (BitOperations.Log2(n) + 1);
+
+        if (n == keys.Length)
+        {
+            IntroSort(keys, depthLimit, comparer, step);
+        }
+        else if (n > 1)
+        {
+            IntroSort(keys, depthLimit, comparer, step, from, to);
+        }
+    }
+
+    private static void IntroSort(Span<TPixel> keys, int depthLimit, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+        //int hi = ((keys.Length / step) - 1) * step; // We have to make sure this is a multiple of `step` //NOPE, we are iterating in reverse order
+        int hi = to - step;
+
+        while (hi > 0)
+        {
+            int partitionSize = hi + step;
+
+            if (partitionSize <= IntrosortSizeThreshold)
+            {
+                //if (partitionSize == 2 * step)
+                //{
+                //    SwapIfGreaterWithValues(keys, comparer, 0, hi);
+                //    return;
+                //}
+
+                //if (partitionSize == 3)
+                //{
+                //    SwapIfGreaterWithValues(keys, comparer, 0, hi - 1);
+                //    SwapIfGreaterWithValues(keys, comparer, 0, hi);
+                //    SwapIfGreaterWithValues(keys, comparer, hi - 1, hi);
+                //    return;
+                //}
+
+                InsertionSort(keys.Slice(0, partitionSize), comparer, step, from, to);
+                return;
+            }
+
+            if (depthLimit == 0)
+            {
+                // We don't have a good heap sort method for this yet :(
+                //HeapSort(keys.Slice(0, partitionSize), comparer, step); 
+                InsertionSort(keys.Slice(0, partitionSize), comparer, step);
+
+                return;
+            }
+            depthLimit--;
+
+            int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer, step, from, to);
+
+            // Note we've already partitioned around the pivot and do not have to move the pivot again.
+            IntroSort(keys[(p + step)..partitionSize], depthLimit, comparer, step, from, to);
+            hi = p - step;
+        }
+    }
+
+    private static int PickPivotAndPartition(Span<TPixel> keys, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+        // We can assume this is already a multiple of `step` when called from `IntroSort(Span<TPixel> keys, int depthLimit, IComparer<TPixel> comparer, int step)`
+        int hi = keys.Length - step;
+
+        // Compute median-of-three.  But also partition them, since we've done the comparison.
+        // This must be a multiple of `step`.
+        // TODO: Might find a more efficient way to unforce this later.
+        int middle = (hi >> 1) / step * step; //compiler might remove this? careful
+
+        // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+        SwapIfGreaterWithValues(keys, comparer, 0, middle);  // swap the low with the mid point
+        SwapIfGreaterWithValues(keys, comparer, 0, hi);      // swap the low with the high
+        SwapIfGreaterWithValues(keys, comparer, middle, hi); // swap the middle with the high
+
+        TPixel pivot = keys[middle];
+        Swap(keys, middle, hi - step);
+        int left = 0, right = hi - step;  // We already partitioned lo and hi and put the pivot in hi - step.  And we pre-increment & decrement below.
+
+        while (left < right)
+        {
+            while (comparer.Compare(keys[(left += step)], pivot) < 0) ;
+            while (comparer.Compare(pivot, keys[(right -= step)]) < 0) ;
+
+            if (left >= right)
+                break;
+
+            Swap(keys, left, right);
+        }
+
+        // Put pivot in the right location.
+        if (left != hi - step)
+        {
+            Swap(keys, left, hi - step);
+        }
+        return left;
+    }
+    #endregion
+
+
+    #region Steppedieどゅ
+    private void IntrospectiveSort(Span<TPixel> keys, IComparer<TPixel> comparer, int step)
+    {
+        int n = keys.Length / step;
+
+        if (n > 1)
+        {
+            IntroSort(keys, 2 * (BitOperations.Log2((uint)n) + 1), comparer, step);
+        }
+    }
+
+    private static void IntroSort(Span<TPixel> keys, int depthLimit, IComparer<TPixel> comparer, int step)
+    {
+        int d = keys.Length % step + 1;
+        int hi = keys.Length - d;
+
+
+        while (hi > 0)
+        {
+            int partitionSize = hi + d;
+
+            if (hi <= IntrosortSizeThreshold * step)
+            {
+                if (hi == 2 * step)
+                {
+                    SwapIfGreaterWithValues(keys, comparer, 0, hi);
+                    return;
+                }
+
+                if (hi == 3 * step)
+                {
+                    SwapIfGreaterWithValues(keys, comparer, 0, hi - step);
+                    SwapIfGreaterWithValues(keys, comparer, 0, hi);
+                    SwapIfGreaterWithValues(keys, comparer, hi - step, hi);
+                    return;
+                }
+
+                InsertionSort(keys.Slice(0, partitionSize), comparer, step);
+                return;
+            }
+
+            if (depthLimit == 0)
+            {
+                // We don't have a good heap sort method for this yet :(
+                //HeapSort(keys.Slice(0, partitionSize), comparer, step); 
+                InsertionSort(keys.Slice(0, partitionSize), comparer, step);
+
+                return;
+            }
+            depthLimit--;
+
+            int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer, step);
+
+            // Note we've already partitioned around the pivot and do not have to move the pivot again.
+            IntroSort(keys[(p + step)..partitionSize], depthLimit, comparer, step);
+            hi = p - step;
+        }
+    }
+
+    private static int PickPivotAndPartition(Span<TPixel> keys, IComparer<TPixel> comparer, int step)
+    {
+        int d = keys.Length % step;
+        int hi = keys.Length - d;
+        Console.WriteLine(hi % step == 0);
+        if (hi % step != 0)
+        {
+            Console.WriteLine();
+        }
+
+        // Compute median-of-three.  But also partition them, since we've done the comparison.
+        // This must be a multiple of `step`.
+        // TODO: Might find a more efficient way to unforce this later.
+        int middle = (hi >> 1) / step * step; //compiler might remove this? careful
+
+        // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+        SwapIfGreaterWithValues(keys, comparer, 0, middle);  // swap the low with the mid point
+        SwapIfGreaterWithValues(keys, comparer, 0, hi);      // swap the low with the high
+        SwapIfGreaterWithValues(keys, comparer, middle, hi); // swap the middle with the high
+
+        TPixel pivot = keys[middle];
+        Swap(keys, middle, hi - step);
+        int left = 0, right = hi - step;  // We already partitioned lo and hi and put the pivot in hi - step.  And we pre-increment & decrement below.
+
+        while (left < right)
+        {
+            while (comparer.Compare(keys[(left += step)], pivot) < 0) ;
+            while (comparer.Compare(pivot, keys[(right -= step)]) < 0) ;
+
+            if (left >= right)
+                break;
+
+            Swap(keys, left, right);
+        }
+
+        // Put pivot in the right location.
+        if (left != hi - step)
+        {
+            Swap(keys, left, hi - step);
+        }
+        return left;
+    }
+    #endregion
+
+    #region From To
+    private void IntrospectiveSort(Span<TPixel> keys, IComparer<TPixel> comparer, int from, int to)
+    {
+        var n = (uint)(to - from);
+        var depthLimit = 2 * (BitOperations.Log2(n) + 1);
+
+        if (n == keys.Length)
+        {
+            IntroSort(keys, depthLimit, comparer);
+        }
+        else if (n > 1U)
+        {
+            IntroSort(keys, depthLimit, comparer, from, to);
+        }
+    }
+
+    private static void IntroSort(Span<TPixel> keys, int depthLimit, IComparer<TPixel> comparer, int from, int to)
+    {
+        int hi = to - 1;
+        while (hi > from)
+        {
+            int partitionSize = hi + 1;
+
+            if (partitionSize <= IntrosortSizeThreshold)
+            {
+                Debug.Assert(partitionSize >= 2);
+
+                if (partitionSize == 2)
+                {
+                    SwapIfGreaterWithValues(keys, comparer, from, hi);
+                    return;
+                }
+
+                if (partitionSize == 3)
+                {
+                    SwapIfGreaterWithValues(keys, comparer, from, hi - 1);
+                    SwapIfGreaterWithValues(keys, comparer, from, hi);
+                    SwapIfGreaterWithValues(keys, comparer, hi - 1, hi);
+                    return;
+                }
+
+                InsertionSort(keys.Slice(from, partitionSize-from), comparer);
+                return;
+            }
+
+            if (depthLimit == 0)
+            {
+                HeapSort(keys.Slice(from, partitionSize-from), comparer);
+                return;
+            }
+
+            depthLimit--;
+
+            int p = PickPivotAndPartition(keys.Slice(from, partitionSize-from), comparer, from, to);
+
+            // Note we've already partitioned around the pivot and do not have to move the pivot again.
+            IntroSort(keys[(p + 1)..partitionSize], depthLimit, comparer, from, to);
+            hi = p - 1;
+        }
+    }
+
+    private static int PickPivotAndPartition(Span<TPixel> keys, IComparer<TPixel> comparer, int from, int to)
+    {
+        int hi = to - 1;
+        int lo = from;
+
+        // Compute median-of-three.  But also partition them, since we've done the comparison.
+        int middle = ((hi-lo) >> 1) + lo; // might be inaccurate
+
+        // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+        SwapIfGreaterWithValues(keys, comparer, lo, middle);  // swap the low with the mid point
+        SwapIfGreaterWithValues(keys, comparer, lo, hi);      // swap the low with the high
+        SwapIfGreaterWithValues(keys, comparer, middle, hi); // swap the middle with the high
+
+        TPixel pivot = keys[middle];
+        Swap(keys, middle, hi - 1);
+        int left = 0, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+        while (left < right)
+        {
+            while (comparer.Compare(keys[++left], pivot) < 0) ;
+            while (comparer.Compare(pivot, keys[--right]) < 0) ;
+
+            if (left >= right)
+                break;
+
+            Swap(keys, left, right);
+        }
+
+        // Put pivot in the right location.
+        if (left != hi - 1)
+        {
+            Swap(keys, left, hi - 1);
+        }
+
+        return left;
+    }
+    #endregion
 
     #endregion
 
 
     #region Heap Sort
     #region Original
-    private static void HeapSort_OG(Span<TPixel> span, IComparer<TPixel> comparer)
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer)
     {
         int n = span.Length;
 
@@ -269,23 +599,23 @@ public class Sorter<TPixel>
     }
     #endregion
 
-
-    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int from, int to, int step)
+    #region From To
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int from, int to)
     {
         // build max heap
-        for (int i = to >> 1; i >= from + 1; i -= 1)
+        for (int i = to >> 1; i >= from + 1; i --)
         {
-            DownHeap(span, i, to - from, from, comparer, step);
+            DownHeap(span, i, to - from, from, comparer);
         }
 
         // build sorted span from heap
-        for (int i = to; i >= from + 1; i -= 1)
+        for (int i = to; i > from + 1; i --)
         {
             Swap(span, from, i - 1);
-            DownHeap(span, 1, i - 1 - from, from, comparer, step);
+            DownHeap(span, 1, i - 1 - from, from, comparer);
         }
     }
-    private static void DownHeap(Span<TPixel> span, int i, int to, int from, IComparer<TPixel> comparer, int step)
+    private static void DownHeap(Span<TPixel> span, int i, int to, int from, IComparer<TPixel> comparer)
     {
         TPixel d = span[from + i - 1];
 
@@ -310,7 +640,83 @@ public class Sorter<TPixel>
 
         span[from + i - 1] = d;
     }
+    #endregion
 
+    #region From To with Fake Step
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int step, int from, int to)
+    {
+
+    }
+    #endregion
+
+    #region Fake Step
+    private static void HeapSort_F(Span<TPixel> span, IComparer<TPixel> comparer, int step)
+    {
+        int n = span.Length;
+
+        // Create a copy of the original span with every 'step'-th element
+        TPixel[] sortedElements = new TPixel[(n + step - 1) / step];
+        int sortedElementsCount = 0;
+
+        for (int i = step - 1; i < n; i += step)
+        {
+            sortedElements[sortedElementsCount] = span[i];
+            sortedElementsCount++;
+        }
+
+        // Sort the copied span
+        HeapSort(sortedElements, comparer);
+
+        // Merge the sorted copied span back into the original span
+        int sortedIndex = 0;
+        for (int i = step - 1; i < n; i += step)
+        {
+            span[i] = sortedElements[sortedIndex];
+            sortedIndex++;
+        }
+    }
+    #endregion
+
+    #region Step (Does not work)
+    private static void HeapSort(Span<TPixel> span, IComparer<TPixel> comparer, int step)
+    {
+        int n = span.Length;
+
+        for (int i = n >> step; i >= step; i -= step)
+        {
+            DownHeap(span, i, n, 0, comparer, step);
+        }
+
+        for (int i = n; i > step; i -= step)
+        {
+            Swap(span, 0, i - step);
+            DownHeap(span, step, i - step, 0, comparer, step);
+        }
+    }
+    private static void DownHeap(Span<TPixel> span, int i, int n, int lo, IComparer<TPixel> comparer, int step)
+    {
+        TPixel d = span[lo + i - step];
+
+        while (i <= n >> step)
+        {
+            int child = i << step;
+            if (child < n && comparer.Compare(span[lo + child - step], span[lo + child]) < 0)
+            {
+                child += step;
+            }
+
+            if (!(comparer.Compare(d, span[lo + child - step]) < 0))
+            {
+                break;
+            }
+
+            span[lo + i - step] = span[lo + child - step];
+            i = child;
+        }
+
+        span[lo + i - step] = d;
+    }
+    #endregion
     #endregion
 
 
@@ -326,12 +732,29 @@ public class Sorter<TPixel>
     /// <param name="to">exclusive</param>
     private static void InsertionSort(Span<TPixel> keys, IComparer<TPixel> comparer, int step, int from, int to)
     {
-        for (int i = from; i < to - step; i += step)
+        for (int i = from; i < (to - step); i += step)
         {
             TPixel t = keys[i + step];
 
             int j = i;
             while (j >= from && comparer.Compare(t, keys[j]) < 0)
+            {
+                keys[j + step] = keys[j];
+                j -= step;
+            }
+
+            keys[j + step] = t;
+        }
+    }
+
+    private static void InsertionSort(Span<TPixel> keys, IComparer<TPixel> comparer, int step)
+    {
+        for (int i = 0; i < (keys.Length - step); i += step)
+        {
+            TPixel t = keys[i + step];
+
+            int j = i;
+            while (j >= 0 && comparer.Compare(t, keys[j]) < 0)
             {
                 keys[j + step] = keys[j];
                 j -= step;
@@ -378,3 +801,4 @@ public class Sorter<TPixel>
     }
     #endregion
 }
+

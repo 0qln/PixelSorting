@@ -29,7 +29,7 @@ static class Program
 
 
         // testing
-        sorter.HeapTesting(new Comparer24bit.Descending.Blue());
+        sorter.IntroTesting(new Comparer24bit.Descending.Blue());
 
 
         //save sorted image
