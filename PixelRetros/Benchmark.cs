@@ -18,7 +18,7 @@ namespace PixelRetros.Benchmark
         public static TimeSpan BenchmarkTimePerMethod { get; set; } = TimeSpan.FromSeconds(8);
 
 
-        public static void Run<T>()
+        public static void Run<T>(params object?[]? parameteres)
         {
             var methods = typeof(T).GetMethods().Where(x => x.GetCustomAttribute<BenchmarkAttribute>() != null);
             var results = new Dictionary<MethodInfo, List<long>>();
@@ -36,7 +36,7 @@ namespace PixelRetros.Benchmark
                 metTime = Stopwatch.StartNew();
                 while (metTime.ElapsedTicks <= WarmupTimePerMethod.Ticks)
                 {
-                    T instance = Activator.CreateInstance<T>();
+                    T instance = parameteres is null ? Activator.CreateInstance<T>() : (T)Activator.CreateInstance(typeof(T), parameteres)!;
                     Stopwatch sw = Stopwatch.StartNew();
                     method.Invoke(instance, null);
                     sw.Stop();
@@ -49,8 +49,7 @@ namespace PixelRetros.Benchmark
                 metTime = Stopwatch.StartNew();
                 while (metTime.ElapsedTicks <= BenchmarkTimePerMethod.Ticks)
                 {
-                    T instance = Activator.CreateInstance<T>();
-
+                    T instance = parameteres is null ? Activator.CreateInstance<T>() : (T)Activator.CreateInstance(typeof(T), parameteres)!;
                     Stopwatch sw = Stopwatch.StartNew();
                     method.Invoke(instance, null);
                     sw.Stop();
