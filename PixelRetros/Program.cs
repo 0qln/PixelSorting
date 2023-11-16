@@ -29,11 +29,11 @@ static class Program
 
 
         // testing
-        sorter.IntroTesting(new Comparer24bit.Descending.Blue());
+        //sorter.HeapTesting(new Comparer24bit.Descending.Blue());
 
 
         //save sorted image
-        sorter.SortDirection = SortDirection.Vertical;
+        sorter.SortDirection = SortDirection.Horizontal;
         sorter.StdSort(new Comparer24bit.Descending.Blue());
         bmp.UnlockBits(sorter.BitmapData);
         bmp.Save(IMG_SORTED);
