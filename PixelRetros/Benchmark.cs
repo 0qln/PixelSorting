@@ -14,63 +14,55 @@ namespace PixelRetros.Benchmark
 
 
 
-        public static TimeSpan WarmupTime { get; set; } = TimeSpan.FromSeconds(10);
-        public static TimeSpan BenchmarkTime { get; set; } = TimeSpan.FromSeconds(20);
+        public static TimeSpan WarmupTimePerMethod { get; set; } = TimeSpan.FromSeconds(5);
+        public static TimeSpan BenchmarkTimePerMethod { get; set; } = TimeSpan.FromSeconds(8);
 
 
-        public static IEnumerable<MethodInfo> GetMethods<T>()
+        public static void Run<T>(params object?[]? parameteres)
         {
-            return typeof(T).GetMethods().Where(x => x.GetCustomAttribute<BenchmarkAttribute>() != null);
-        }
-
-        public static void Run<T>()
-        {
+            var methods = typeof(T).GetMethods().Where(x => x.GetCustomAttribute<BenchmarkAttribute>() != null);
             var results = new Dictionary<MethodInfo, List<long>>();
-            foreach (var method in GetMethods<T>())
+
+            foreach (var method in methods)
             {
-                results.Add(method, new List<long>());
-            }
 
-            Console.WriteLine("Warming up...");
-            var warmupTimer = Stopwatch.StartNew();
-            while (warmupTimer.ElapsedTicks <= WarmupTime.Ticks)
-            {
-                foreach (var method in results.Keys)
-                {
-                    T instance = Activator.CreateInstance<T>();
-
-                    Stopwatch sw = Stopwatch.StartNew();
-                    method.Invoke(instance, null);
-                    sw.Stop();
-                }
-            }
-            Console.WriteLine("Finished warm up.");
-
-            Console.WriteLine("Starting benchmark...");
-            var benchmarkTimer = Stopwatch.StartNew();
-            while (benchmarkTimer.ElapsedTicks <= BenchmarkTime.Ticks)
-            {
-                foreach (var method in results.Keys)
-                {
-                    T instance = Activator.CreateInstance<T>();
-
-                    Stopwatch sw = Stopwatch.StartNew();
-                    method.Invoke(instance, null);
-                    sw.Stop();
-
-                    results[method].Add(sw.ElapsedTicks);
-                }
-            }
-            Console.WriteLine("Finished benchmark.");
-
-            foreach (var method in results.Keys)
-            {
                 Console.WriteLine("\n" + method.Name);
-                foreach (var time in results[method])
+
+                Stopwatch metTime;
+                List<long> allElapsedTicks = new();
+
+
+                Console.WriteLine("Warming up...");
+                metTime = Stopwatch.StartNew();
+                while (metTime.ElapsedTicks <= WarmupTimePerMethod.Ticks)
                 {
-                    Console.WriteLine($"{TimeSpan.FromTicks(time)}");
+                    T instance = parameteres is null ? Activator.CreateInstance<T>() : (T)Activator.CreateInstance(typeof(T), parameteres)!;
+                    Stopwatch sw = Stopwatch.StartNew();
+                    method.Invoke(instance, null);
+                    sw.Stop();
                 }
+                metTime.Stop();
+                Console.WriteLine("Finished warm up.");
+
+
+                Console.WriteLine("Starting benchmark...");
+                metTime = Stopwatch.StartNew();
+                while (metTime.ElapsedTicks <= BenchmarkTimePerMethod.Ticks)
+                {
+                    T instance = parameteres is null ? Activator.CreateInstance<T>() : (T)Activator.CreateInstance(typeof(T), parameteres)!;
+                    Stopwatch sw = Stopwatch.StartNew();
+                    method.Invoke(instance, null);
+                    sw.Stop();
+
+                    allElapsedTicks.Add(sw.ElapsedTicks);
+                    Console.WriteLine($"{TimeSpan.FromTicks(sw.ElapsedTicks)}");
+                }
+                metTime.Stop();
+
+
+                results.Add(method, allElapsedTicks);
             }
+
 
             foreach (var result in results)
             {

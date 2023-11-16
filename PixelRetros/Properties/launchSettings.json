@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PixelRetros": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Programmmieren\\Projects\\ImageSorterTesting\\samples\""
+    }
+  }
+}
