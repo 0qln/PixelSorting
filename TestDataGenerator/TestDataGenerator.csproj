@@ -11,8 +11,4 @@
     <ProjectReference Include="..\PixelRetros_new\PixelRetros_new.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Files\" />
-  </ItemGroup>
-
 </Project>

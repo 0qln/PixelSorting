@@ -48,6 +48,9 @@ internal class Program
 
         Random rng = new();
 
+        if (!Directory.Exists("../../../Files/"))
+             Directory.CreateDirectory("../../../Files/");
+        
         foreach (var data in testingData)
         {
             byte[] unsorted = new byte[data.Size];
