@@ -4,11 +4,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+
 namespace UnitTests
 {
     [TestClass]
-    public class UnitTest1
+    public class TestSorting
     {
 
+        [TestMethod]
+        public void TestOnAllData()
+        {
+            
+        }
     }
 }
