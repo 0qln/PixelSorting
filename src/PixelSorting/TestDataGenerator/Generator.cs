@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -45,9 +46,9 @@ namespace TestDataGenerator
             }
         }
 
-        public static IEnumerable<TestInstance> GenerateTestingData(IEnumerable<TestDataSize> testingDataSizes)
+        public static IEnumerable<TestInstance> GenerateTestingData(IEnumerable<TestDataSize> testingDataSizes, int? seed = null)
         {
-            var rng = new Random();
+            Random rng = seed is null ? new() : new((int)seed);
 
             foreach (var datasize in testingDataSizes)
             {
@@ -58,6 +59,68 @@ namespace TestDataGenerator
 
                 yield return new(datasize, unsorted, sorted);
             }
+        }
+        public static IEnumerable<TestInstance<TStruct>> GenerateTestingData<TStruct>(IEnumerable<TestDataSize> testingDataSizes, IComparer<TStruct> comparer, int structSize, int? seed = null)
+            where TStruct :struct
+        {
+            Random rng = seed is null ? new() : new((int)seed);
+
+            foreach (var datasize in testingDataSizes)
+            {
+                byte[] bytes = new byte[datasize.Size * structSize];
+                rng.NextBytes(bytes);
+                TStruct[] unsorted = ByteArrayToStructArray<TStruct>(bytes);
+                TStruct[] sorted = unsorted.ToArray();
+                Sorter.InsertionSort<TStruct>(sorted, comparer, datasize.Step, datasize.From, datasize.To);
+
+                yield return new(datasize, unsorted, sorted);
+            }
+        }
+
+        public static TStruct ByteArrayToStruct<TStruct>(byte[] byteArray) where TStruct : struct
+        {
+            if (byteArray == null || byteArray.Length == 0)
+            {
+                throw new ArgumentException("Byte array is null or empty.");
+            }
+
+            if (Marshal.SizeOf(typeof(TStruct)) > byteArray.Length)
+            {
+                throw new ArgumentException("Byte array is smaller than the size of the struct.");
+            }
+
+            // Pin the managed memory while copying out the data, then unpin it
+            GCHandle handle = GCHandle.Alloc(byteArray, GCHandleType.Pinned);
+            TStruct theStruct = (TStruct)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(TStruct))!;
+            handle.Free();
+
+            return theStruct;
+        }
+        public static TStruct[] ByteArrayToStructArray<TStruct>(byte[] byteArray) where TStruct : struct
+        {
+            if (byteArray == null || byteArray.Length == 0)
+            {
+                throw new ArgumentException("Byte array is null or empty.");
+            }
+
+            int structSize = Marshal.SizeOf(typeof(TStruct));
+
+            if (byteArray.Length % structSize != 0)
+            {
+                throw new ArgumentException("Byte array length is not a multiple of the struct size.");
+            }
+
+            int structCount = byteArray.Length / structSize;
+            TStruct[] structArray = new TStruct[structCount];
+
+            for (int i = 0; i < structCount; i++)
+            {
+                byte[] structBytes = new byte[structSize];
+                Array.Copy(byteArray, i * structSize, structBytes, 0, structSize);
+                structArray[i] = ByteArrayToStruct<TStruct>(structBytes);
+            }
+
+            return structArray;
         }
 
         /// <summary>
