@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using TestDataGenerator;
 
 
-BenchmarkRunner.Run<Benchmark>();
+//BenchmarkRunner.Run<Benchmark>();
 
 public class Benchmark
 {
