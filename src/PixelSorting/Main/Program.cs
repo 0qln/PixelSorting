@@ -5,7 +5,14 @@ using System.Runtime.InteropServices;
 using TestDataGenerator;
 using static Utils.Utils;
 
-BenchmarkRunner.Run<ComparingBenchmark>();
+//BenchmarkRunner.Run<ComparingBenchmark>();
+
+var pixels = new Pixel_24bit[1000, 1000];
+ImageGenerator.Apply(pixels, ImageGenerator.Radial);
+ImageGenerator.Apply(pixels, ImageGenerator.Invert);
+
+Imaging.Utils.Safe(pixels, "radial.bmp");
+
 
 public class ComparingBenchmark
 {

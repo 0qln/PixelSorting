@@ -18,5 +18,10 @@
                 yield return item.ReinterpretCast<TSource, TResult>();
             }
         }
+
+        public static int Lerp(int start, int end, int amount)
+        {
+            return -1;
+        }
     }
 }
