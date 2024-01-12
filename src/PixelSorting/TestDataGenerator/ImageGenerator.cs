@@ -9,17 +9,14 @@ namespace TestDataGenerator
 {
     public class ImageGenerator
     {
-        public delegate Pixel_24bit CardesianToPixel(int x, int y, int width, int height);
+        public delegate Pixel_24bit FromCardesian(int x, int y, int width, int height);
 
-        public delegate Pixel_24bit PixelToPixel(Pixel_24bit pixel);
+        public delegate Pixel_24bit PixelValueTransform(Pixel_24bit pixel);
 
-        public static CardesianToPixel Radial = (int x, int y, int width, int height) =>
+        public static FromCardesian RadialCorner = (int x, int y, int width, int height) =>
         {
-            int centerX = width / 2;
-            int centerY = height / 2;
-
-            double percentageY = Math.Abs(y - centerY) / (double)centerY;
-            double percentageX = Math.Abs(x - centerX) / (double)centerX;
+            double percentageX = Math.Abs(x - width) / (double)width;
+            double percentageY = Math.Abs(y - height) / (double)height;
 
             double percentageCenter = Math.Clamp(Math.Sqrt(Math.Pow(percentageX, 2) + Math.Pow(percentageY, 2)), 0, 1);
 
@@ -28,9 +25,24 @@ namespace TestDataGenerator
             return new Pixel_24bit(value, value, value);
         };
 
-        public static PixelToPixel Invert = (Pixel_24bit p) => new ((byte)(255 - p.R), (byte)(255 - p.G), (byte)(255 - p.B));
+        public static FromCardesian RadialCenter = (int x, int y, int width, int height) =>
+        {
+            int centerX = width / 2;
+            int centerY = height / 2;
 
-        public static void Apply(Pixel_24bit[,] pixels, CardesianToPixel f)
+            double percentageX = Math.Abs(x - centerX) / (double)centerX;
+            double percentageY = Math.Abs(y - centerY) / (double)centerY;
+
+            double percentageCenter = Math.Clamp(Math.Sqrt(Math.Pow(percentageX, 2) + Math.Pow(percentageY, 2)), 0, 1);
+
+            byte value = (byte)(255 * percentageCenter);
+
+            return new Pixel_24bit(value, value, value);
+        };
+
+        public static PixelValueTransform Invert = (Pixel_24bit p) => new ((byte)(255 - p.R), (byte)(255 - p.G), (byte)(255 - p.B));
+
+        public static void Apply(Pixel_24bit[,] pixels, FromCardesian f)
         {
             for (int x = 0; x < pixels.GetLength(0); x++)
             {
@@ -41,7 +53,7 @@ namespace TestDataGenerator
             }
         }
 
-        public static void Apply(Pixel_24bit[,] pixels, PixelToPixel f)
+        public static void Apply(Pixel_24bit[,] pixels, PixelValueTransform f)
         {
             for (int x = 0; x < pixels.GetLength(0); x++)
             {
