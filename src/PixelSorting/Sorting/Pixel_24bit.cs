@@ -6,6 +6,18 @@ using System.Threading.Tasks;
 
 namespace Sorting
 {
+    // Benchmark results [IComparable vs. IComparer]:
+    /*
+    | Method      | dataIndex | Mean        | Error     | StdDev   |
+    |------------ |---------- |------------:|----------:|---------:|
+    | IComparable | 6         |   106.15 ns |  2.121 ns | 4.610 ns |
+    | IComparer   | 6         |    79.82 ns |  1.551 ns | 1.961 ns |
+    | IComparable | 7         |    23.47 ns |  0.214 ns | 0.190 ns |
+    | IComparer   | 7         |    18.22 ns |  0.040 ns | 0.036 ns |
+    | IComparable | 8         | 1,160.54 ns |  2.204 ns | 1.954 ns |
+    | IComparer   | 8         |   776.26 ns | 11.067 ns | 9.241 ns |
+    */
+
     public record struct Pixel_24bit(byte R, byte G, byte B);
 
 
@@ -25,6 +37,16 @@ namespace Sorting
             return a.B.CompareTo(b.B);
         }
     }
+
+
+    public record struct Pixel_24bit_Comparerable_soA_stR(byte R, byte G, byte B) : IComparable<Pixel_24bit_Comparerable_soA_stR>
+    {
+        public int CompareTo(Pixel_24bit_Comparerable_soA_stR other)
+        {
+            return R.CompareTo(other.R);
+        }
+    }
+
 
     public struct SimpleComparablePixel(params byte[] data) : IComparable
     {

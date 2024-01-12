@@ -60,18 +60,18 @@ namespace TestDataGenerator
                 yield return new(datasize, unsorted, sorted);
             }
         }
-        public static IEnumerable<TestInstance<TStruct>> GenerateTestingData<TStruct>(IEnumerable<TestDataSize> testingDataSizes, IComparer<TStruct> comparer, int structSize, int? seed = null)
+        public static IEnumerable<TestInstance<TStruct>> GenerateTestingData<TStruct>(IEnumerable<TestDataSize> testingDataSizes, IComparer<TStruct> comparer, int? seed = null)
             where TStruct :struct
         {
             Random rng = seed is null ? new() : new((int)seed);
 
             foreach (var datasize in testingDataSizes)
             {
-                byte[] bytes = new byte[datasize.Size * structSize];
+                byte[] bytes = new byte[datasize.Size * Marshal.SizeOf<TStruct>()];
                 rng.NextBytes(bytes);
                 TStruct[] unsorted = ByteArrayToStructArray<TStruct>(bytes);
                 TStruct[] sorted = unsorted.ToArray();
-                Sorter.InsertionSort<TStruct>(sorted, comparer, datasize.Step, datasize.From, datasize.To);
+                Sorter.InsertionSort(sorted, comparer, datasize.Step, datasize.From, datasize.To);
 
                 yield return new(datasize, unsorted, sorted);
             }

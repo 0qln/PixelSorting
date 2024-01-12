@@ -8,7 +8,7 @@ namespace UnitTests
         [InlineData(1, 1, 1, 1)]
         public void InsertionSort(int Size, int Step, int From, int To)
         {
-            var tests = Generator.GenerateTestingData<Pixel_24bit>([ new (Size, Step, From, To) ], new Comparer24bit_soA_stB(), Marshal.SizeOf(typeof(Pixel_24bit)), 1);
+            var tests = Generator.GenerateTestingData<Pixel_24bit>([ new (Size, Step, From, To) ], new Comparer24bit_soA_stB(), 1);
 
             foreach (var test in tests)
             {
