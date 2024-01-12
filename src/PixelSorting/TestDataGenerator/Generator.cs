@@ -55,7 +55,7 @@ namespace TestDataGenerator
                 byte[] unsorted = new byte[datasize.Size];
                 rng.NextBytes(unsorted);
                 byte[] sorted = unsorted.ToArray();
-                Sorter.InsertionSort<byte>(sorted, null, datasize.Step, datasize.From, datasize.To);
+                Sorter.InsertionSort<byte>(sorted, comparer:null, datasize.Step, datasize.From, datasize.To);
 
                 yield return new(datasize, unsorted, sorted);
             }

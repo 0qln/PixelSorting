@@ -41,6 +41,83 @@ namespace Sorting
         /// <param name="step"></param>
         /// <param name="from">Inclusive</param>
         /// <param name="to">Exclusive</param>
+        public static void InsertionSort<T>(Span<T> span, Comparison<T> comparison, int step, int from, int to)
+        {
+            for (int i = from; i < to - step; i += step)
+            {
+                T t = span[i + step];
+
+                int j = i;
+                while (j >= from && comparison(t, span[j]) < 0)
+                {
+                    span[j + step] = span[j];
+                    j -= step;
+                }
+
+                span[j + step] = t;
+            }
+        }
+
+        /// <summary></summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="span"></param>
+        /// <param name="comparer"></param>
+        /// <param name="step"></param>
+        /// <param name="from">Inclusive</param>
+        /// <param name="to">Exclusive</param>
+        public static unsafe void InsertionSort_soA_stR<T>(Span<T> span, int step, int from, int to)
+        {
+            fixed (T* begin = &span[0])
+            {
+                Span<Pixel_24bit> pSpan = new Span<Pixel_24bit>(begin, span.Length);
+
+                for (int i = from; i < to - step; i += step)
+                {
+                    Pixel_24bit t = pSpan[i + step];
+
+                    int j = i;
+                    while (j >= from && t.R - pSpan[j].R < 0)
+                    {
+                        pSpan[j + step] = pSpan[j];
+                        j -= step;
+                    }
+
+                    pSpan[j + step] = t;
+                }
+            }
+        }
+
+        /// <summary></summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="span"></param>
+        /// <param name="comparer"></param>
+        /// <param name="step"></param>
+        /// <param name="from">Inclusive</param>
+        /// <param name="to">Exclusive</param>
+        public static unsafe void InsertionSort_soA_stR(Span<Pixel_24bit> span, int step, int from, int to)
+        {
+            for (int i = from; i < to - step; i += step)
+            {
+                Pixel_24bit t = span[i + step];
+
+                int j = i;
+                while (j >= from && t.R - span[j].R < 0)
+                {
+                    span[j + step] = span[j];
+                    j -= step;
+                }
+
+                span[j + step] = t;
+            }
+        }
+
+        /// <summary></summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="span"></param>
+        /// <param name="comparer"></param>
+        /// <param name="step"></param>
+        /// <param name="from">Inclusive</param>
+        /// <param name="to">Exclusive</param>
         public static void InsertionSort<T>(Span<T> span, int step, int from, int to)
             where T : IComparable<T>
         {

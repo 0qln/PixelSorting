@@ -6,23 +6,47 @@ using System.Threading.Tasks;
 
 namespace Sorting
 {
-    // Benchmark results [IComparable vs. IComparer]:
-    /*
-    | Method      | dataIndex | Mean        | Error     | StdDev   |
-    |------------ |---------- |------------:|----------:|---------:|
-    | IComparable | 6         |   106.15 ns |  2.121 ns | 4.610 ns |
-    | IComparer   | 6         |    79.82 ns |  1.551 ns | 1.961 ns |
-    | IComparable | 7         |    23.47 ns |  0.214 ns | 0.190 ns |
-    | IComparer   | 7         |    18.22 ns |  0.040 ns | 0.036 ns |
-    | IComparable | 8         | 1,160.54 ns |  2.204 ns | 1.954 ns |
-    | IComparer   | 8         |   776.26 ns | 11.067 ns | 9.241 ns |
+    #region Benchmark results
+
+    /* 
+    | Method                   | dataIndex | Mean        | Error    | StdDev   |
+    |------------------------- |---------- |------------:|---------:|---------:|
+    | IComparable              | 7         |    21.06 ns | 0.174 ns | 0.163 ns |
+    | IComparer                | 7         |    18.22 ns | 0.047 ns | 0.044 ns |
+    | ComparisonLambda         | 7         |    18.15 ns | 0.042 ns | 0.038 ns |
+    | ComparisonInstacneMethod | 7         |    26.74 ns | 0.323 ns | 0.270 ns |
+    | ComparisonStaticMethod   | 7         |    39.83 ns | 0.040 ns | 0.036 ns |
+    | IComparable              | 8         | 1,058.71 ns | 2.902 ns | 2.423 ns |
+    | IComparer                | 8         |   765.31 ns | 1.124 ns | 0.939 ns |
+    | ComparisonLambda         | 8         | 1,145.77 ns | 1.432 ns | 1.340 ns |
+    | ComparisonInstacneMethod | 8         |   973.12 ns | 1.268 ns | 1.124 ns |
+    | ComparisonStaticMethod   | 8         | 2,377.13 ns | 4.204 ns | 3.726 ns |
+
+    | Method                   | dataIndex | Mean       | Error    | StdDev   |
+    |------------------------- |---------- |-----------:|---------:|---------:|
+    | IComparable              | 8         |   975.7 ns |  8.21 ns |  7.28 ns |
+    | IComparer                | 8         |   767.2 ns |  3.73 ns |  3.31 ns |
+    | ComparisonLambda         | 8         | 1,159.9 ns | 10.85 ns |  9.06 ns |
+    | ComparisonInstacneMethod | 8         | 1,008.5 ns | 20.02 ns | 33.46 ns |
+    | ComparisonStaticMethod   | 8         | 2,457.9 ns | 48.35 ns | 69.34 ns |
+    | InlineComparisonGeneric  | 8         |   874.2 ns |  9.21 ns |  8.61 ns |
+    | InlineComparison         | 8         |   882.4 ns | 16.72 ns | 16.42 ns |
+
+    => IComparer's the way to go
+    
     */
+
+    #endregion
+
+
 
     public record struct Pixel_24bit(byte R, byte G, byte B);
 
 
-    // (so = SortOrder)
-    // (st = SortType)
+    /// <summary>
+    /// SortOder (so): Ascending
+    /// SortType (st): Red
+    /// </summary>
     public class Comparer24bit_soA_stR : IComparer<Pixel_24bit>
     {
         public int Compare(Pixel_24bit a, Pixel_24bit b)
@@ -30,6 +54,7 @@ namespace Sorting
             return a.R.CompareTo(b.R);
         }
     }
+
     public class Comparer24bit_soA_stB : IComparer<Pixel_24bit>
     {
         public int Compare(Pixel_24bit a, Pixel_24bit b)
@@ -38,6 +63,7 @@ namespace Sorting
         }
     }
 
+    #region Experimental
 
     public record struct Pixel_24bit_Comparerable_soA_stR(byte R, byte G, byte B) : IComparable<Pixel_24bit_Comparerable_soA_stR>
     {
@@ -47,6 +73,13 @@ namespace Sorting
         }
     }
 
+    public class StaticComparer24bit_soA_stR
+    {
+        public static int StaticCompare(Pixel_24bit a, Pixel_24bit b)
+        {
+            return a.R.CompareTo(b.R);
+        }
+    }
 
     public struct SimpleComparablePixel(params byte[] data) : IComparable
     {
@@ -81,4 +114,6 @@ namespace Sorting
             return ret;
         }
     }
+
+    #endregion
 }
