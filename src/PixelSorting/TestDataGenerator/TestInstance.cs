@@ -5,7 +5,15 @@ namespace TestDataGenerator
     public record struct TestInstance(TestDataSize Properties, byte[] Unsorted, byte[] Sorted);
     public record struct TestInstance<T>(TestDataSize Properties, T[] Unsorted, T[] Sorted)
     {
-
+        public static TestInstance<T> CastFrom<TSource>(TestInstance<TSource> original, Func<TSource, T> cast)
+        {
+            return new TestInstance<T>
+            {
+                Properties = original.Properties,
+                Unsorted = original.Unsorted.Select(cast).ToArray(),
+                Sorted = original.Sorted.Select(cast).ToArray()
+            };
+        }
 
         public TestInstance<T> Clone_()
         {
