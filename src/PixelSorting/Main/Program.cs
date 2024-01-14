@@ -34,6 +34,39 @@ using TestDataGenerator;
 
 
 
+const int
+    size = 20,
+    step = 1,
+    from = 0,
+    to = size;
+
+var comparer = new ComparerIntPixel24bit_soA_stR4();
+var tests = Generator.GenerateTestingData<Pixel32bit>([new(size, step, from, to)], comparer, 420);
+
+
+foreach (var test in tests)
+{
+
+    Console.WriteLine("Original");
+    for (int i = 0; i < test.Properties.Size; i++)
+        Console.WriteLine(test.Unsorted[i].ToPixelString());
+
+    var pspan = new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To);
+
+    Sorter<int>.HeapSort(pspan, comparer);
+
+    Console.WriteLine("Expected");
+
+    for (int i = 0; i < test.Properties.Size; i++)
+        Console.WriteLine(test.Sorted[i].ToPixelString());
+
+    Console.WriteLine("Result");
+
+    for (int i = 0; i < test.Properties.Size; i++)
+        Console.WriteLine(test.Unsorted[i].ToPixelString());
+
+}
+
 BenchmarkRunner.Run<SpanBenchmark>();
 
 
