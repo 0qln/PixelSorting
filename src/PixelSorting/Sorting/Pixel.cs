@@ -16,50 +16,64 @@ using System.Threading.Tasks;
 
 namespace Sorting
 {
+    /// <summary>
+    /// ARGB pixel format
+    /// </summary>
     public static class Pixel32bit_Util
     {
-        internal const int AlphaShift = 24;
-        internal const int RedShift = 16;
-        internal const int GreenShift = 8;
-        internal const int BlueShift = 0;
-        internal const uint AlphaMask = 0xFFu << AlphaShift;
-        internal const uint RedMask = 0xFFu << RedShift;
-        internal const uint GreenMask = 0xFFu << GreenShift;
-        internal const uint BlueMask = 0xFFu << BlueShift;
+        public const int AShift = 24;
+        public const int RShift = 16;
+        public const int GShift = 8;
+        public const int BShift = 0;
+        public const int AMask = unchecked(0xFF << AShift);
+        public const int RMask = unchecked(0xFF << RShift);
+        public const int GMask = unchecked(0xFF << GShift);
+        public const int BMask = unchecked(0xFF << BShift);
+
+        public static Pixel32bit FromARGB(int a, int r, int g, int b)
+        {
+            return
+                unchecked(
+                a << AShift |
+                r << RShift |
+                g << GShift |
+                b << BShift
+                );
+        }
 
         public static string ToPixelString(this Pixel32bit pixel)
         {
-            const int pad = 4;
-            var a = pixel.A().ToString().PadLeft(4);
-            var r = pixel.R().ToString().PadLeft(4);
-            var g = pixel.G().ToString().PadLeft(4);
-            var b = pixel.B().ToString().PadLeft(4);
+            const int PAD = 4;
+            var a = pixel.A().ToString().PadLeft(PAD);
+            var r = pixel.R().ToString().PadLeft(PAD);
+            var g = pixel.G().ToString().PadLeft(PAD);
+            var b = pixel.B().ToString().PadLeft(PAD);
             return $"{{ {a},{r},{g},{b} }}";
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte A(this Pixel32bit pixel)
-        {
-            return unchecked((byte)(pixel >> AlphaShift));
-        }
+        public static byte A(this Pixel32bit pixel) => unchecked((byte)(pixel >> AShift));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte R(this Pixel32bit pixel)
-        {
-            return unchecked((byte)(pixel >> RedShift));
-        }
+        public static byte R(this Pixel32bit pixel) => unchecked((byte)(pixel >> RShift));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte G(this Pixel32bit pixel)
-        {
-            return unchecked((byte)(pixel >> GreenShift));
-        }
+        public static byte G(this Pixel32bit pixel) => unchecked((byte)(pixel >> GShift));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte B(this Pixel32bit pixel)
-        {
-            return unchecked((byte)(pixel >> BlueShift));
-        }
+        public static byte B(this Pixel32bit pixel) => unchecked((byte)(pixel >> BShift));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int UnshiftedA(this Pixel32bit pixel) => unchecked((pixel & AMask));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int UnshiftedR(this Pixel32bit pixel) => unchecked((pixel & RMask));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int UnshiftedG(this Pixel32bit pixel) => unchecked((pixel & GMask));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int UnshiftedB(this Pixel32bit pixel) => unchecked((pixel & BMask));
     }
 
 
@@ -108,6 +122,15 @@ namespace Sorting
 
     => For Number based comparers, choose either UInt method 4, or Int method 2
     => Inlining the comparisons does not imrove performance, even when caching is possible through it (see `InsertionSort_24bitAsInt_Anded`)
+    
+    
+    | Method            | comparer             | Mean     | Error    | StdDev   |
+    |------------------ |--------------------- |---------:|---------:|---------:|
+    | IntrospectiveSort | Sorti(...)A_stR [32] | 23.90 ms | 0.181 ms | 0.151 ms |
+    | IntrospectiveSort | Sorti(...)stR_1 [34] | 26.20 ms | 0.045 ms | 0.040 ms |
+    | IntrospectiveSort | Sorti(...)stR_2 [34] | 23.46 ms | 0.109 ms | 0.091 ms |
+    
+    => Use unshifted values for comparisons.
 
      */
 
@@ -231,34 +254,32 @@ namespace Sorting
     #endregion
 
     #region Comparers
+
+    /// <summary>SortOder (so): Ascending | SortType (st): Alpha</summary>
+    public class ComparerIntPixel_soA_stA : IComparer<int>
+    {
+        public int Compare(int a, int b) => a.UnshiftedA() - b.UnshiftedA();
+    }
     /// <summary>SortOder (so): Ascending | SortType (st): Red</summary>
     public class ComparerIntPixel_soA_stR : IComparer<int>
     {
-        public int Compare(int a, int b)
-        {
-            return (a & 0xFF) - (b & 0xFF);
-        }
+        public int Compare(int a, int b) => a.UnshiftedR() - b.UnshiftedR();
     }
     /// <summary>SortOder (so): Ascending | SortType (st): Green</summary>
     public class ComparerIntPixel_soA_stG : IComparer<int>
     {
-        public int Compare(int a, int b)
-        {
-            return (a & 0xFF00) - (b & 0xFF00);
-        }
+        public int Compare(int a, int b) => a.UnshiftedG() - b.UnshiftedG();
     }
     /// <summary>SortOder (so): Ascending | SortType (st): Blue</summary>
     public class ComparerIntPixel_soA_stB : IComparer<int>
     {
-        public int Compare(int a, int b)
-        {
-            return (a & 0xFF0000) - (b & 0xFF0000);
-        }
+        public int Compare(int a, int b) => a.UnshiftedB() - b.UnshiftedB();
     }
 
 
     // Others...
 
+    #region Depricated Pixel structures
     public class Comparer24bit_soA_stR : IComparer<Pixel>
     {
         public int Compare(Pixel a, Pixel b)
@@ -317,34 +338,23 @@ namespace Sorting
             return a.CompareTo(b);
         }
     }
-    public class ComparerIntPixel24bit_soA_stR1 : IComparer<int>
-    {
-        public int Compare(int a, int b)
-        {
-            return BitConverter.GetBytes(a)[0].CompareTo(BitConverter.GetBytes(b)[0]);
-        }
-    }
-    public class ComparerIntPixel24bit_soA_stR2 : IComparer<int>
-    {
-        public int Compare(int a, int b)
-        {
-            return (a & 0xFF) - (b & 0xFF);
-        }
-    }
-    public class ComparerIntPixel24bit_soA_stR3 : IComparer<int>
-    {
-        public int Compare(int a, int b)
-        {
-            return (a << 24) - (b << 24);
-        }
-    }
-    public class ComparerIntPixel24bit_soA_stR4 : IComparer<int>
+    #endregion
+    public class ComparerIntPixel_soA_stR_1 : IComparer<int>
     {
         public int Compare(int a, int b)
         {
             return a.R() - b.R();
         }
     }
+    public class ComparerIntPixel_soA_stR_2 : IComparer<int>
+    {
+        public int Compare(int a, int b)
+        {
+            return a.UnshiftedR() - b.UnshiftedR();
+        }
+    }
+
+    #region UInt
     public class ComparerUIntPixel24bit_soA_stR1 : IComparer<uint>
     {
         public int Compare(uint a, uint b)
@@ -381,14 +391,9 @@ namespace Sorting
             return *(int*)&result;
         }
     }
+    #endregion
 
-    public class Comparer24bit_soA_stB : IComparer<Pixel>
-    {
-        public int Compare(Pixel a, Pixel b)
-        {
-            return a.B.CompareTo(b.B);
-        }
-    }
+
     #endregion
 
     #region Experimental

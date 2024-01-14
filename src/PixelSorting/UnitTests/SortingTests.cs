@@ -10,20 +10,6 @@ namespace UnitTests
         static _24bit To24bit(uint x) => new(BitConverter.GetBytes(x)[0], BitConverter.GetBytes(x)[1], BitConverter.GetBytes(x)[2]);
         static _24bit To24bit(int x) => new(BitConverter.GetBytes(x)[0], BitConverter.GetBytes(x)[1], BitConverter.GetBytes(x)[2]);
 
-        [Theory]
-        [InlineData(68608, 0)]
-        [InlineData(68608, 68609)]
-        [InlineData(1245439, 68710)]
-        [InlineData(68610, 68618)]
-        public void UInt_red(uint a, uint b)
-        {
-            var result = new ComparerUIntPixel24bit_soA_stR3().Compare(a, b);
-            var expected = To24bit(a).R.CompareTo(To24bit(b).R);
-
-            if      (expected == 0) Assert.True(result == 0);
-            else if (expected > 0) Assert.True(result > 0);
-            else if (expected < 0) Assert.True(result < 0);
-        }
 
         [Theory]
         [InlineData(68608, 0)]
@@ -32,8 +18,8 @@ namespace UnitTests
         [InlineData(68610, 68618)]
         public void Int_red(int a, int b)
         {
-            var result = new ComparerIntPixel24bit_soA_stR2().Compare(a, b);
-            var expected = To24bit(a).R.CompareTo(To24bit(b).R);
+            var result = new ComparerIntPixel_soA_stR_2().Compare(a, b);
+            var expected = new ComparerIntPixel_soA_stR_1().Compare(a, b);
 
             if (expected == 0) Assert.True(result == 0);
             else if (expected > 0) Assert.True(result > 0);
@@ -47,25 +33,8 @@ namespace UnitTests
             {
                 for (int b = 0xF; b <= 0x00FFFFFF; b <<= 0x1)
                 {
-                    var result = new ComparerIntPixel24bit_soA_stR2().Compare(a, b);
-                    var expected = To24bit(a).R.CompareTo(To24bit(b).R);
-
-                    if (expected == 0) Assert.True(result == 0);
-                    else if (expected > 0) Assert.True(result > 0);
-                    else if (expected < 0) Assert.True(result < 0);
-                }
-            }
-        }
-
-        [Fact]
-        public void UInt_red_BULK()
-        {
-            for (uint a = 0xF; a <= 0x00FFFFFF; a <<= 0x1)
-            {
-                for (uint b = 0xF; b <= 0x00FFFFFF; b <<= 0x1)
-                {
-                    var result = new ComparerUIntPixel24bit_soA_stR4().Compare(a, b);
-                    var expected = To24bit(a).R.CompareTo(To24bit(b).R);
+                    var result = new ComparerIntPixel_soA_stR().Compare(a, b);
+                    var expected = new ComparerIntPixel_soA_stR_1().Compare(a, b);
 
                     if (expected == 0) Assert.True(result == 0);
                     else if (expected > 0) Assert.True(result > 0);
@@ -88,7 +57,7 @@ namespace UnitTests
         [InlineData(100, 3, 30, 70)]
         public void InsertionSort_PixelSpan(int size, int step, int from, int to)
         {
-            var comparer = new ComparerIntPixel24bit_soA_stR4();
+            var comparer = new ComparerIntPixel_soA_stR_1();
 
             var tests = Generator.GenerateTestingData<int>([new (size, step, from, to)], comparer, 69);
 
@@ -112,7 +81,7 @@ namespace UnitTests
         [InlineData(100, 3, 30, 70)]
         public void HeapSort_PixelSpan(int size, int step, int from, int to)
         {
-            var comparer = new ComparerIntPixel24bit_soA_stR4();
+            var comparer = new ComparerIntPixel_soA_stR_1();
 
             var tests = Generator.GenerateTestingData<int>([new(size, step, from, to)], comparer, 69);
 
@@ -136,7 +105,7 @@ namespace UnitTests
         [InlineData(100, 3, 30, 70)]
         public void IntroSort_PixelSpan(int size, int step, int from, int to)
         {
-            var comparer = new ComparerIntPixel24bit_soA_stR4();
+            var comparer = new ComparerIntPixel_soA_stR_1();
 
             var tests = Generator.GenerateTestingData<int>([new(size, step, from, to)], comparer, 69);
 

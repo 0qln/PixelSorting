@@ -34,45 +34,20 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 //bmp.Save(RESULT);
 
 
+//var pixel = Pixel32bit_Util.FromARGB(10, 20, 30, 40);
 
-//const int
-//    size = 20,
-//    step = 1,
-//    from = 0,
-//    to = size;
+//Console.WriteLine(pixel.ToPixelString());
 
-//var comparer = new ComparerIntPixel24bit_soA_stR4();
-//var tests = Generator.GenerateTestingData<Pixel32bit>([new(size, step, from, to)], comparer, 420);
+//pixel = pixel & Pixel32bit_Util.AMask;
+
+//Console.WriteLine(pixel.ToPixelString());
 
 
-//foreach (var test in tests)
-//{
-
-//    Console.WriteLine("Original");
-//    for (int i = 0; i < test.Properties.Size; i++)
-//        Console.WriteLine(test.Unsorted[i].ToPixelString());
-
-//    var pspan = new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To);
-
-//    Sorter<int>.IntrospectiveSort(pspan, comparer);
-
-//    Console.WriteLine("Expected");
-
-//    for (int i = 0; i < test.Properties.Size; i++)
-//        Console.WriteLine(test.Sorted[i].ToPixelString());
-
-//    Console.WriteLine("Result");
-
-//    for (int i = 0; i < test.Properties.Size; i++)
-//        Console.WriteLine(test.Unsorted[i].ToPixelString());
-
-//}
-
-BenchmarkRunner.Run<SortBenchmark>();
+BenchmarkRunner.Run<ComparingBenchmark>();
 
 public class SortBenchmark
 {
-    private readonly ComparerIntPixel24bit_soA_stR4 _comparer = new();
+    private readonly ComparerIntPixel_soA_stR_1 _comparer = new();
 
     public IEnumerable<TestDataSize> valuesFordatasizes => Generator.GetDefaultTestingDataset();
 
@@ -146,7 +121,7 @@ public class SpanBenchmark
     [Params(100, 10, 1, 3)]
     public int Step { get; set; }
 
-    private ComparerIntPixel24bit_soA_stR4 comparer = new();
+    private ComparerIntPixel_soA_stR_1 comparer = new();
     List<TestInstance<Pixel32bit>> data;
 
     public SpanBenchmark()
@@ -173,84 +148,28 @@ public class SpanBenchmark
 
 public class ComparingBenchmark
 {
-    [Params(/*0, 1, 2, 3, 4, 5, 6, 7,*/ 8)]
-    public int dataIndex { get; set; }
+    [ParamsSource(nameof(comparers))]
+    public IComparer<Pixel32bit> comparer;
+    public IEnumerable<IComparer<Pixel32bit>> comparers => [ 
+        new ComparerIntPixel_soA_stR(),
+        new ComparerIntPixel_soA_stR_1(), 
+        new ComparerIntPixel_soA_stR_2() 
+    ];
 
-    //[Params(50, 50, 426, 240, 640, 360, 854, 480, 1280, 720)]
-    public int dataSize { get; set; }
+    //[ParamsSource(nameof(valuesFordatasizes))]
+    //public TestDataSize Datasize;
+    //public IEnumerable<TestDataSize> valuesFordatasizes => Generator.GetDefaultTestingDataset();
 
-    //static List<TestInstance<Pixel_24bit>> dataInstancesComparer = Generator.GenerateTestingData<Pixel_24bit>(Generator.GetDefaultTestingDataset(), new Comparer24bit_soA_stR(), 1).ToList();
-    //static List<TestInstance<Pixel_24bit_Comparerable_soA_stR>> dataInstancesComparable = dataInstancesComparer.Select(x => x.CloneAs<Pixel_24bit_Comparerable_soA_stR>()).ToList();
+    [Benchmark]
+    public void IntrospectiveSort()
+    {
+        var tests = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize { Size=10000, From=0, Step=1, To=10000 }], comparer, 420).ToList();
+        foreach (var test in tests)
+        {
+            Sorter<Pixel32bit>.IntrospectiveSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
+        }
+    }
 
-    //[Benchmark]
-    //public void IComparable()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter<Pixel_24bit>.InsertionSort(dataInstance.Unsorted, new Comparer24bit_soA_stR(), dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark]
-    //public void IComparer()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparable[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter<Pixel_24bit>.InsertionSort<Pixel_24bit_Comparerable_soA_stR>(dataInstance.Unsorted, dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark]
-    //public void ComparisonLambda()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter<Pixel_24bit>.InsertionSort<Pixel_24bit>(dataInstance.Unsorted, (a, b) => a.R.CompareTo(b.R), dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark]
-    //public void ComparisonInstacneMethod()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter.InsertionSort<Pixel_24bit>(dataInstance.Unsorted, comparison: new Comparer24bit_soA_stR().Compare, dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark]
-    //public void ComparisonStaticMethod()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter.InsertionSort<Pixel_24bit>(dataInstance.Unsorted, comparison: StaticComparer24bit_soA_stR.StaticCompare, dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark] 
-    //public void InlineComparisonGeneric()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter.InsertionSort_soA_stR<Pixel_24bit>(dataInstance.Unsorted, dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
-
-    //[Benchmark]
-    //public void InlineComparison()
-    //{
-    //    // Select data instance
-    //    var dataInstance = dataInstancesComparer[dataIndex];
-
-    //    // Run the sorting 
-    //    Sorter.InsertionSort_soA_stR(dataInstance.Unsorted, dataInstance.Properties.Step, dataInstance.Properties.From, dataInstance.Properties.To);
-    //}
 }
 
 public class PixelStructureBenchmark
