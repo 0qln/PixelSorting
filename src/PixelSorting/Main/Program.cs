@@ -43,6 +43,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 //Console.WriteLine(pixel.ToPixelString());
 
 
+
 BenchmarkRunner.Run<ComparingBenchmark>();
 
 public class SortBenchmark
@@ -151,9 +152,10 @@ public class ComparingBenchmark
     [ParamsSource(nameof(comparers))]
     public IComparer<Pixel32bit> comparer;
     public IEnumerable<IComparer<Pixel32bit>> comparers => [ 
-        new ComparerIntPixel_soA_stR(),
+        new PixelComparer_soA_stR_32bit(),
         new ComparerIntPixel_soA_stR_1(), 
-        new ComparerIntPixel_soA_stR_2() 
+        new ComparerIntPixel_soA_stR_2(),
+        new PixelComparer.Ascending.Red._32bit(),
     ];
 
     //[ParamsSource(nameof(valuesFordatasizes))]

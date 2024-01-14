@@ -33,7 +33,7 @@ namespace UnitTests
             {
                 for (int b = 0xF; b <= 0x00FFFFFF; b <<= 0x1)
                 {
-                    var result = new ComparerIntPixel_soA_stR().Compare(a, b);
+                    var result = new PixelComparer_soA_stR_32bit().Compare(a, b);
                     var expected = new ComparerIntPixel_soA_stR_1().Compare(a, b);
 
                     if (expected == 0) Assert.True(result == 0);

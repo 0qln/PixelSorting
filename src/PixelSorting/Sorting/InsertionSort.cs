@@ -11,17 +11,6 @@ namespace Sorting
     public partial class Sorter<TPixel>
         where TPixel : struct
     {
-        public unsafe void InsertionSort(SortDirection direction)
-        {
-            //if (SortDirection == SortDirection.Horizontal)
-            //{
-            //    for (int y = 0; y < _imageHeight; y++)
-            //    {
-            //        InsertionSort<TPixel>()
-            //    }
-            //}
-        }
-
         /// <summary></summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="span"></param>
@@ -46,7 +35,11 @@ namespace Sorting
             }
         }
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="span"></param>
+        /// <param name="comparer"></param>
         public static void InsertionSort(PixelSpan span, IComparer<TPixel> comparer)
         {
             for (int i = 0; i < span.ItemCount - 1; ++i)

@@ -255,25 +255,96 @@ namespace Sorting
 
     #region Comparers
 
+
+    /// <summary>
+    /// A collection of differenct hardcoded pixel comparers.
+    /// </summary>
+    public class PixelComparer
+    {
+        /// <summary>
+        /// In ascending sort order.
+        /// </summary>
+        public class Ascending
+        {
+            /// <summary>
+            /// Sort according to the alpha value.
+            /// </summary>
+            public class Alpha
+            {
+                /// <summary>
+                /// 32 bit pixel format.
+                /// </summary>
+                public class _32bit : IComparer<Pixel32bit>
+                {
+                    public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedA() - b.UnshiftedA();
+                }
+            }
+
+            public class Red
+            {
+                /// <summary>
+                /// 32 bit pixel format.
+                /// </summary>
+                public class _32bit : IComparer<Pixel32bit>
+                {
+                    public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedR() - b.UnshiftedR();
+                }
+            }
+
+            public class Green
+            {
+                /// <summary>
+                /// 32 bit pixel format.
+                /// </summary>
+                public class _32bit : IComparer<Pixel32bit>
+                {
+                    public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedG() - b.UnshiftedG();
+                }
+            }
+
+            public class Blue
+            {
+                /// <summary>
+                /// 32 bit pixel format.
+                /// </summary>
+                public class _32bit : IComparer<Pixel32bit>
+                {
+                    public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedB() - b.UnshiftedB();
+                }
+            }
+        }
+
+        /// <summary>
+        /// In descending sort order.
+        /// </summary>
+        public class Descending
+        {
+
+        }
+    }
+
     /// <summary>SortOder (so): Ascending | SortType (st): Alpha</summary>
-    public class ComparerIntPixel_soA_stA : IComparer<int>
+    public class PixelComparer_soA_stA : IComparer<Pixel32bit>
     {
-        public int Compare(int a, int b) => a.UnshiftedA() - b.UnshiftedA();
+        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedA() - b.UnshiftedA();
     }
+
     /// <summary>SortOder (so): Ascending | SortType (st): Red</summary>
-    public class ComparerIntPixel_soA_stR : IComparer<int>
+    public class PixelComparer_soA_stR_32bit : IComparer<Pixel32bit>
     {
-        public int Compare(int a, int b) => a.UnshiftedR() - b.UnshiftedR();
+        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedR() - b.UnshiftedR();
     }
+
     /// <summary>SortOder (so): Ascending | SortType (st): Green</summary>
-    public class ComparerIntPixel_soA_stG : IComparer<int>
+    public class PixelComparer_soA_stG : IComparer<Pixel32bit>
     {
-        public int Compare(int a, int b) => a.UnshiftedG() - b.UnshiftedG();
+        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedG() - b.UnshiftedG();
     }
+
     /// <summary>SortOder (so): Ascending | SortType (st): Blue</summary>
-    public class ComparerIntPixel_soA_stB : IComparer<int>
+    public class PixelComparer_soA_stB : IComparer<Pixel32bit>
     {
-        public int Compare(int a, int b) => a.UnshiftedB() - b.UnshiftedB();
+        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedB() - b.UnshiftedB();
     }
 
 
