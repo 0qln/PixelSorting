@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using TestDataGenerator;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 //BenchmarkRunner.Run<PixelStructureBenchmark>();
 
@@ -34,41 +35,80 @@ using TestDataGenerator;
 
 
 
-const int
-    size = 20,
-    step = 1,
-    from = 0,
-    to = size;
+//const int
+//    size = 20,
+//    step = 1,
+//    from = 0,
+//    to = size;
 
-var comparer = new ComparerIntPixel24bit_soA_stR4();
-var tests = Generator.GenerateTestingData<Pixel32bit>([new(size, step, from, to)], comparer, 420);
+//var comparer = new ComparerIntPixel24bit_soA_stR4();
+//var tests = Generator.GenerateTestingData<Pixel32bit>([new(size, step, from, to)], comparer, 420);
 
 
-foreach (var test in tests)
+//foreach (var test in tests)
+//{
+
+//    Console.WriteLine("Original");
+//    for (int i = 0; i < test.Properties.Size; i++)
+//        Console.WriteLine(test.Unsorted[i].ToPixelString());
+
+//    var pspan = new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To);
+
+//    Sorter<int>.IntrospectiveSort(pspan, comparer);
+
+//    Console.WriteLine("Expected");
+
+//    for (int i = 0; i < test.Properties.Size; i++)
+//        Console.WriteLine(test.Sorted[i].ToPixelString());
+
+//    Console.WriteLine("Result");
+
+//    for (int i = 0; i < test.Properties.Size; i++)
+//        Console.WriteLine(test.Unsorted[i].ToPixelString());
+
+//}
+
+BenchmarkRunner.Run<SortBenchmark>();
+
+public class SortBenchmark
 {
+    private readonly ComparerIntPixel24bit_soA_stR4 _comparer = new();
 
-    Console.WriteLine("Original");
-    for (int i = 0; i < test.Properties.Size; i++)
-        Console.WriteLine(test.Unsorted[i].ToPixelString());
+    public IEnumerable<TestDataSize> valuesFordatasizes => Generator.GetDefaultTestingDataset();
 
-    var pspan = new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To);
+    [ParamsSource(nameof(valuesFordatasizes))]
+    public TestDataSize Datasize;
 
-    Sorter<int>.IntrospectiveSort(pspan, comparer);
+    [Benchmark]
+    public void InsertionSort()
+    {
+        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
+        foreach (var test in tests)
+        {
+            Sorter<Pixel32bit>.InsertionSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
+        }
+    }
 
-    Console.WriteLine("Expected");
+    [Benchmark]
+    public void HeapSort()
+    {
+        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
+        foreach (var test in tests)
+        {
+            Sorter<Pixel32bit>.HeapSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
+        }
+    }
 
-    for (int i = 0; i < test.Properties.Size; i++)
-        Console.WriteLine(test.Sorted[i].ToPixelString());
-
-    Console.WriteLine("Result");
-
-    for (int i = 0; i < test.Properties.Size; i++)
-        Console.WriteLine(test.Unsorted[i].ToPixelString());
-
+    [Benchmark]
+    public void IntrospectiveSort()
+    {
+        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
+        foreach (var test in tests)
+        {
+            Sorter<Pixel32bit>.IntrospectiveSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
+        }
+    }
 }
-
-//BenchmarkRunner.Run<SpanBenchmark>();
-
 
 public class SpanBenchmark
 {

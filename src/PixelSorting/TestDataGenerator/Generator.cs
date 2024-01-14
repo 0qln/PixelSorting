@@ -13,11 +13,11 @@ namespace TestDataGenerator
 
         public static (int Horizontal, int Vertical)[] CommonImageSizesL() => new[]
         {
-        (50, 50),
-        (426, 240),
-        (640, 360),
-        (854, 480),
-        (1280, 720),
+        //(50, 50),
+        //(426, 240),
+        //(640, 360),
+        //(854, 480),
+        //(1280, 720),
         (1920, 1080),
         (2560, 1440),
         (3840, 2160)
