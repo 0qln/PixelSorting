@@ -122,5 +122,29 @@ namespace UnitTests
                 Assert.True(test.Sorted.SequenceEqual(test.Unsorted, EqualityComparer<int>.Create((a, b) => comparer.Compare(a, b) == 0)));
             }
         }
+
+
+
+        [Theory]
+        [InlineData(5, 1, 0, 5)]
+
+        [InlineData(100, 1, 0, 100)]
+        [InlineData(100, 2, 0, 100)]
+        [InlineData(100, 3, 0, 100)]
+        [InlineData(100, 1, 30, 100)]
+        [InlineData(100, 2, 0, 70)]
+        [InlineData(100, 3, 30, 70)]
+        public void IntroSort_PixelSpan(int size, int step, int from, int to)
+        {
+            var comparer = new ComparerIntPixel24bit_soA_stR4();
+
+            var tests = Generator.GenerateTestingData<int>([new(size, step, from, to)], comparer, 69);
+
+            foreach (var test in tests)
+            {
+                Sorter<int>.IntrospectiveSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
+                Assert.True(test.Sorted.SequenceEqual(test.Unsorted, EqualityComparer<int>.Create((a, b) => comparer.Compare(a, b) == 0)));
+            }
+        }
     }
 }

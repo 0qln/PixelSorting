@@ -53,7 +53,7 @@ foreach (var test in tests)
 
     var pspan = new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To);
 
-    Sorter<int>.HeapSort(pspan, comparer);
+    Sorter<int>.IntrospectiveSort(pspan, comparer);
 
     Console.WriteLine("Expected");
 
@@ -67,7 +67,7 @@ foreach (var test in tests)
 
 }
 
-BenchmarkRunner.Run<SpanBenchmark>();
+//BenchmarkRunner.Run<SpanBenchmark>();
 
 
 public class SpanBenchmark
