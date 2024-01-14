@@ -6,22 +6,21 @@ global using Pixel32bit = int;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Imaging;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Sorting;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using TestDataGenerator;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-//BenchmarkRunner.Run<PixelStructureBenchmark>();
 
 //const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
 //const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)_32bit.bmp";
 
 //var bmp = Imaging.Utils.GetBitmap(SOURCE);
 //var data = Imaging.Utils.ExposeData(bmp);
-//var sorter = new Sorter<Pixel_24bit>(data.Scan0, data.Width, data.Height, data.Stride);
+//var sorter = new Sorter<Pixel32bit>(data.Scan0, data.Width, data.Height, data.Stride);
 
 //List<Pixel_24bit[]> rows = new();
 //for (int row = 0; row < data.Height; row++)
@@ -43,8 +42,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 //Console.WriteLine(pixel.ToPixelString());
 
 
+BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
-BenchmarkRunner.Run<ComparingBenchmark>();
 
 public class SortBenchmark
 {
@@ -174,161 +173,58 @@ public class ComparingBenchmark
 
 }
 
-public class PixelStructureBenchmark
+
+[GenericTypeArguments(typeof(Pixel32bit), typeof(PixelComparer.Ascending.Red._32bit))]
+[GenericTypeArguments(typeof(Pixel24bitStruct), typeof(PixelComparer.Ascending.Red._24bit))]
+[GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitStruct))]
+/*
+| Type                                                           | Method | Mean     | Error    | StdDev   |
+|--------------------------------------------------------------- |------- |---------:|---------:|---------:|
+| GenericPixelStructureBenchmark<Pixel32bit, _32bit>             | Pixel  | 676.1 us |  6.39 us |  5.98 us |
+| GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | 797.3 us | 15.83 us | 23.69 us |
+| GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | 721.5 us | 10.57 us |  9.37 us |
+*/
+public class GenericPixelStructureBenchmark<TPixel, TComparer>
+    where TPixel : struct
+    where TComparer : IComparer<TPixel>, new()
 {
-    static List<TestInstance<_24bit>> data =
-        //Generator.GenerateTestingData<_24bit>(Generator.GetDefaultTestingDataset(), new ComparerJust24bit_soA_stR(), 1).ToList();
-        Generator.GenerateTestingData<_24bit>([new TestDataSize(Size:5000, Step: 1, From:0, 5000)], new ComparerJust24bit_soA_stR(), 420).ToList();
-        
+    private IEnumerable<TestInstance<TPixel>> testInstances;
+    private IComparer<TPixel> comparer = new TComparer();
 
-    static List<TestInstance<Pixel>> dataInstances1 = data.Select(x => TestInstance<Pixel>.CastFrom(x, _24bit.ToPixel_24bit)).ToList();
-    static List<TestInstance<RawPixel_24bit>> dataInstances2 = data.Select(x => TestInstance<RawPixel_24bit>.CastFrom(x, _24bit.ToRawPixel_24bit)).ToList();
-    static List<TestInstance<ArrayPixel2_24bit>> dataInstances5 = data.Select(x => TestInstance<ArrayPixel2_24bit>.CastFrom(x, _24bit.ToArrayPixel2_24bit)).ToList();
-    static List<TestInstance<ArrayPixel2ro_24bit>> dataInstances6 = data.Select(x => TestInstance<ArrayPixel2ro_24bit>.CastFrom(x, _24bit.ToArrayPixel2ro_24bit)).ToList();
-    static List<TestInstance<FlatPixel_24bit>> dataInstances7 = data.Select(x => TestInstance<FlatPixel_24bit>.CastFrom(x, _24bit.ToFlatPixel_24bit)).ToList();
-    static List<TestInstance<byte>> dataInstances8 = data.Select(ti =>
+
+    // Precompute the testing data s.d. it does not interferce with the benchmark.
+    public GenericPixelStructureBenchmark()
     {
-        TestInstance<byte> ret = new TestInstance<byte>
-        {
-            Properties = ti.Properties,
-            Unsorted = ti.Unsorted.SelectMany<_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-            Sorted = ti.Sorted.SelectMany<_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-        };
-        return ret;
-    }).ToList();
-    static List<TestInstance<byte>> dataInstances9 = data.Select(ti =>
+        // Take the extra step to cast the same data into different sizes. Otherwise, bytes might get
+        // shifted into places they werent in a pixel of different size.
+        var defaulttests = Generator.GenerateTestingData<Pixel24bitStruct>([new TestDataSize { Size = 10000, From = 0, Step = 1, To = 10000 }], new PixelComparer.Ascending.Red._24bit(), 420).ToList();
+        testInstances = defaulttests.Select(CastTo<TPixel>);
+    }
+
+
+    [Benchmark]
+    public void Pixel()
     {
-        TestInstance<byte> ret = new TestInstance<byte>
+        foreach (var test in testInstances)
         {
-            Properties = ti.Properties,
-            Unsorted = ti.Unsorted.SelectMany<_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-            Sorted = ti.Sorted.SelectMany<_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-        };
-        return ret;
-    }).ToList();
-    static List<TestInstance<Pixel32bit>> dataInstances10 = data.Select(ti =>
+            Sorter<TPixel>.IntrospectiveSort(new Sorter<TPixel>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
+        }
+    }
+
+    private static TestInstance<TResultPixel> CastTo<TResultPixel>(TestInstance<Pixel24bitStruct> instance24bit)
     {
-        TestInstance<int> ret = new TestInstance<int>
+        Dictionary<Type, Func<Pixel24bitStruct, object>> pixelConverter = new()
         {
-            Properties = ti.Properties,
-            Unsorted = ti.Unsorted.Select<_24bit, int>(pixel => BitConverter.ToInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-            Sorted = ti.Sorted.Select<_24bit, int>(pixel => BitConverter.ToInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
+            { typeof(Pixel32bit), x24 => Pixel32bit_Util.From24bit(x24) },
+            { typeof(Pixel24bitStruct), x24 => x24 },
+            { typeof(Pixel24bitRecord), x24 => new Pixel24bitRecord(x24.R, x24.G, x24.B) }
         };
-        return ret;
-    }).ToList();
-    static List<TestInstance<uint>> dataInstances11 = data.Select(ti =>
-    {
-        TestInstance<uint> ret = new TestInstance<uint>
+
+        return new TestInstance<TResultPixel>
         {
-            Properties = ti.Properties,
-            Unsorted = ti.Unsorted.Select<_24bit, uint>(pixel => BitConverter.ToUInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-            Sorted = ti.Sorted.Select<_24bit, uint>(pixel => BitConverter.ToUInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
+            Properties = instance24bit.Properties,
+            Unsorted = instance24bit.Unsorted.Select(pixelConverter[typeof(TResultPixel)]).Cast<TResultPixel>().ToArray(),
+            Sorted = instance24bit.Sorted.Select(pixelConverter[typeof(TResultPixel)]).Cast<TResultPixel>().ToArray()
         };
-        return ret;
-    }).ToList();
-
-
-    //[Benchmark]
-    //public void Pixel_24bit()
-    //{
-    //    var instance = dataInstances1.MaxBy(x => x.Properties.Size);
-    //    Sorter<Pixel_24bit>.InsertionSort(instance.Unsorted, new Comparer24bit_soA_stR(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void RawPixel_24bit()
-    //{
-    //    var instance = dataInstances2.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort(instance.Unsorted, new ComparerRaw24bit_soA_stR(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void ArrayPixel2_24bit()
-    //{
-    //    var instance = dataInstances5.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort(instance.Unsorted, new ComparerArrayPixel224bit_soA_stR(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void ArrayPixel2ro_24bit()
-    //{
-    //    var instance = dataInstances6.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort(instance.Unsorted, new ComparerArrayPixel2ro24bit_soA_stR(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark] 
-    //public void FlatPixel_24bit()
-    //{
-    //    var instance = dataInstances7.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort(instance.Unsorted, new ComparerFlatPixel24bit_soA_stR(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void Span_24bit()
-    //{
-    //    var instance = dataInstances8.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bit(instance.Unsorted, new ComparerByByte24bit_soA(), 0, instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsInt1()
-    //{
-    //    var instance = dataInstances10.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsInt(instance.Unsorted, new ComparerIntPixel24bit_soA_stR1(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsInt2()
-    //{
-    //    var instance = dataInstances10.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsInt(instance.Unsorted, new ComparerIntPixel24bit_soA_stR2(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsInt_Anded()
-    //{
-    //    var instance = dataInstances10.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsInt_Anded(instance.Unsorted, new ComparerIntPixel24bit_soA_stR4(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsUInt2()
-    //{
-    //    var instance = dataInstances11.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsUInt(instance.Unsorted, new ComparerUIntPixel24bit_soA_stR2(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsUInt3()
-    //{
-    //    var instance = dataInstances11.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsUInt(instance.Unsorted, new ComparerUIntPixel24bit_soA_stR3(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsUInt4()
-    //{
-    //    var instance = dataInstances11.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsUInt(instance.Unsorted, new ComparerUIntPixel24bit_soA_stR4(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
-
-    //[Benchmark]
-    //public void InsertionSort_24bitAsUInt5()
-    //{
-    //    var instance = dataInstances11.MaxBy(x => x.Properties.Size);
-    //    Sorter.InsertionSort_24bitAsUInt(instance.Unsorted, new ComparerUIntPixel24bit_soA_stR5(), instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    //    Debug.Assert(instance.Unsorted.SequenceEqual(instance.Sorted));
-    //}
+    }
 }

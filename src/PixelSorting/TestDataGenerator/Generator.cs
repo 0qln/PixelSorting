@@ -46,20 +46,6 @@ namespace TestDataGenerator
             }
         }
 
-        public static IEnumerable<TestInstance> GenerateTestingData(IEnumerable<TestDataSize> testingDataSizes, int? seed = null)
-        {
-            Random rng = seed is null ? new() : new((int)seed);
-
-            foreach (var datasize in testingDataSizes)
-            {
-                byte[] unsorted = new byte[datasize.Size];
-                rng.NextBytes(unsorted);
-                byte[] sorted = unsorted.ToArray();
-                Sorter<byte>.InsertionSort(sorted, comparer:default, datasize.Step, datasize.From, datasize.To);
-
-                yield return new(datasize, unsorted, sorted);
-            }
-        }
         public static IEnumerable<TestInstance<TStruct>> GenerateTestingData<TStruct>(IEnumerable<TestDataSize> testingDataSizes, IComparer<TStruct> comparer, int? seed = null)
             where TStruct :struct
         {

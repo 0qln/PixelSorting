@@ -41,6 +41,16 @@ namespace Sorting
                 );
         }
 
+        public static Pixel32bit From24bit(Pixel24bitStruct pixel24Bit)
+        {
+            return
+                unchecked(
+                pixel24Bit.R << RShift |
+                pixel24Bit.G << GShift |
+                pixel24Bit.B << BShift
+                );
+        }
+
         public static string ToPixelString(this Pixel32bit pixel)
         {
             const int PAD = 4;
@@ -184,6 +194,16 @@ namespace Sorting
         //}
     }
 
+    public record struct Pixel24bitRecord(byte R, byte G, byte B);
+
+    public struct Pixel24bitStruct(byte r, byte g, byte b)
+    {
+        public byte
+            R = r,
+            G = g,
+            B = b;
+    }
+
     public record struct Pixel(byte R, byte G, byte B);
 
     public struct RawPixel_24bit(byte r, byte g, byte b)
@@ -288,6 +308,21 @@ namespace Sorting
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedR() - b.UnshiftedR();
+                }
+                /// <summary>
+                /// 24 bit pixel format.
+                /// </summary>
+                public class _24bit : IComparer<Pixel24bitStruct>
+                {
+                    public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => a.R - b.R;
+                }
+
+                /// <summary>
+                /// temp
+                /// </summary>
+                public class _24bitStruct : IComparer<Pixel24bitRecord>
+                {
+                    public int Compare(Pixel24bitRecord a, Pixel24bitRecord b) => a.R - b.R;
                 }
             }
 

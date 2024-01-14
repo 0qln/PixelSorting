@@ -112,6 +112,8 @@ namespace Sorting
     
      */
     #endregion
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
     public unsafe partial class Sorter<TPixel>
         where TPixel : struct
     {
@@ -228,5 +230,6 @@ namespace Sorting
                 get => _step;
             }
         }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
     }
 }
