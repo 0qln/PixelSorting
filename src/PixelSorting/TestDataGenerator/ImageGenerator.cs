@@ -9,9 +9,9 @@ namespace TestDataGenerator
 {
     public class ImageGenerator
     {
-        public delegate Pixel_24bit FromCardesian(int x, int y, int width, int height);
+        public delegate Pixel FromCardesian(int x, int y, int width, int height);
 
-        public delegate Pixel_24bit PixelValueTransform(Pixel_24bit pixel);
+        public delegate Pixel PixelValueTransform(Pixel pixel);
 
         public static FromCardesian RadialCorner = (int x, int y, int width, int height) =>
         {
@@ -22,7 +22,7 @@ namespace TestDataGenerator
 
             byte value =(byte)(255 * percentageCenter);
 
-            return new Pixel_24bit(value, value, value);
+            return new Pixel(value, value, value);
         };
 
         public static FromCardesian RadialCenter = (int x, int y, int width, int height) =>
@@ -37,12 +37,12 @@ namespace TestDataGenerator
 
             byte value = (byte)(255 * percentageCenter);
 
-            return new Pixel_24bit(value, value, value);
+            return new Pixel(value, value, value);
         };
 
-        public static PixelValueTransform Invert = (Pixel_24bit p) => new ((byte)(255 - p.R), (byte)(255 - p.G), (byte)(255 - p.B));
+        public static PixelValueTransform Invert = (Pixel p) => new ((byte)(255 - p.R), (byte)(255 - p.G), (byte)(255 - p.B));
 
-        public static void Apply(Pixel_24bit[,] pixels, FromCardesian f)
+        public static void Apply(Pixel[,] pixels, FromCardesian f)
         {
             for (int x = 0; x < pixels.GetLength(0); x++)
             {
@@ -53,7 +53,7 @@ namespace TestDataGenerator
             }
         }
 
-        public static void Apply(Pixel_24bit[,] pixels, PixelValueTransform f)
+        public static void Apply(Pixel[,] pixels, PixelValueTransform f)
         {
             for (int x = 0; x < pixels.GetLength(0); x++)
             {

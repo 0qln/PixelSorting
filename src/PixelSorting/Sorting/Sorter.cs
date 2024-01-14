@@ -1,168 +1,130 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Sorting
 {
-    public partial class Sorter
+    public unsafe partial class Sorter<TPixel>
+        where TPixel : struct
     {
-        public SortType SortType { get; set; } = SortType.Red;
-        public SortDirection SortDirection { get; set; } = SortDirection.Horizontal;
-        public SortOrder SortOrder { get; set; } = SortOrder.Ascending;
-
         private readonly int _imageWidth, _imageHeight, _imageStride, _bytesPerPixel;
-        private byte[] _imageData;
-        private ComparablePixel[] _pixels;
-        private SimpleComparablePixel[] _simplePixels;
+
+        // Both sould point to the same address in memory.
+        private readonly ulong _byteCount;
+        private readonly byte* _bytes;
+        private readonly int _pixelCount;
+        private readonly TPixel* _pixels;
+
+
+        public delegate void Sort(SortDirection direction, SortOrder order, SortType type);
+
+        internal delegate void SortInternal(Span<TPixel> keys, IComparer<TPixel> comparer, int step, int from, int to);
 
 
         /// <summary>
-        /// 
+        /// Initialize a Sorter.
         /// </summary>
-        /// <param name="pixelData">Expected to be 3 bytes per pixel in RGB format.</param>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        public Sorter(byte[] pixelData, int width, int height, int stride)
+        /// <param name="byteDataBegin">The adress of the first byte of the image data.</param>
+        /// <param name="height">The height of the image in pixels.</param>
+        /// <param name="width">The width of the image in pixels.</param>
+        /// <param name="stride">The width of the image in bytes.</param>
+        /// <exception cref="ArgumentException"></exception>
+        public Sorter(nint byteDataBegin, int width, int height, int stride)
         {
+            _bytesPerPixel = stride / width;
+            if (_bytesPerPixel != Marshal.SizeOf<TPixel>())
+            {
+                throw new ArgumentException("Given `stride` to `width` ratio does not match the struct size of `TPixel`.");
+            }
             _imageStride = stride;
             _imageHeight = height;
             _imageWidth = width;
-            _imageData = pixelData;
-            _bytesPerPixel = stride / width;
-
-            if (_bytesPerPixel != 3) throw new NotImplementedException();
-
-            _pixels = _imageData.Chunk(_bytesPerPixel).Select(x => new ComparablePixel(x)).ToArray();
-            _simplePixels = _imageData.Chunk(_bytesPerPixel).Select(x => new SimpleComparablePixel(x)).ToArray();
+            _bytes = (byte*)byteDataBegin;
+            _pixels = (TPixel*)byteDataBegin;
+            _byteCount = (ulong)height * (ulong)stride;
+            _pixelCount = height * width;
         }
 
 
-        private Span<ComparablePixel> BuildSpanFromPixels(int scanIdx)
+        public unsafe Span<TPixel> GetRow(int y)
         {
-            if (SortDirection == SortDirection.Horizontal)
-            {
-                return new Span<ComparablePixel>(_pixels.Chunk(_imageWidth).ElementAt(scanIdx));
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            return new Span<TPixel>(_pixels + y * _imageWidth, _imageWidth);
         }
 
-        private Span<ComparablePixel> BuildSpanFromBytes(int scanIdx)
+        // TODO: make custom Span<T> ??
+
+
+        public unsafe Sorter<TResult> CastToPixelFormat<TResult>(Func<TPixel, TResult> pixelConverter)
+            where TResult : struct
         {
-            byte[] scan;
-            if (SortDirection == SortDirection.Horizontal)
+            // Allocate new data
+            int newSize = Marshal.SizeOf<TResult>();
+            byte[] newBytes = new byte[_pixelCount * newSize];
+
+            // Populate new data
+            Span<TResult> newPixels = new Span<TResult>(&newBytes, _pixelCount);
+            for (int i = 0; i < _pixelCount; i++)
             {
-                scan = _imageData.Chunk(_imageStride).ElementAt(scanIdx);
-            }
-            else
-            {
-                throw new NotImplementedException();
+                newPixels[i] = pixelConverter(_pixels[i]);
             }
 
-            return new Span<ComparablePixel>(
-                scan
-                .Chunk(_bytesPerPixel)
-                .Select(x => new ComparablePixel(x))
-                .ToArray()
-            );
-        }
+            // Create new sorter with copy of this pixeldata
+            var result = new Sorter<TResult>((IntPtr)(&newBytes), _imageWidth, _imageHeight, newSize * _imageWidth);
 
-        private Span<SimpleComparablePixel> BuildSimpleSpanFromPixels(int scanIdx)
-        {
-            if (SortDirection == SortDirection.Horizontal)
-            {
-                return new Span<SimpleComparablePixel>(_simplePixels.Chunk(_imageWidth).ElementAt(scanIdx));
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-        private Span<SimpleComparablePixel> BuildSimpleSpanFromBytes(int scanIdx)
-        {
-            byte[] scan;
-            if (SortDirection == SortDirection.Horizontal)
-            {
-                scan = _imageData.Chunk(_imageStride).ElementAt(scanIdx);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            return new Span<SimpleComparablePixel>(
-                scan
-                .Chunk(_bytesPerPixel)
-                .Select(x => new SimpleComparablePixel(x))
-                .ToArray()
-            );
+            // Return the result
+            return result;
         }
 
 
-        public void StdSortBytes()
+        /// <summary>
+        /// Custom `Span<typeparamref name="TPixel"/>` implementation.
+        /// </summary>
+        /// <typeparam name="TPixel"></typeparam>
+        public readonly ref struct PixelSpan
         {
-            if (SortOrder == SortOrder.Ascending)
+            /// <summary>A byref or a native ptr.</summary>
+            internal readonly ref TPixel _reference;
+            /// <summary>The number of elements this Span operates on.</summary>
+            private readonly int _items;
+            /// <summary>The number that controls how many where the next elmenet is when indexing.</summary>
+            private readonly int _step;
+
+
+            public PixelSpan(TPixel[] reference, int step, int lo, int hi)
             {
-                for (int scan = 0; scan < (SortDirection == SortDirection.Horizontal ? _imageWidth : _imageHeight); scan++)
+                int size = hi - lo;
+                _items = size / step + (size % step == 0 ? 0 : 1);
+                _reference = ref reference[lo];
+                _step = step;
+            }
+
+
+            public ref TPixel this[int index]
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
                 {
-                    BuildSpanFromBytes(scan).Sort();
+                    if ((uint)index >= (uint)_items)
+                        throw new IndexOutOfRangeException();
+                    return ref Unsafe.Add(ref _reference, (nint)(uint)(index * _step));
                 }
             }
-        }
 
-        public void StdSortPixels()
-        {
-            if (SortOrder == SortOrder.Ascending)
+            public int ItemCount
             {
-                for (int scan = 0; scan < (SortDirection == SortDirection.Horizontal ? _imageWidth : _imageHeight); scan++)
-                {
-                    BuildSpanFromPixels(scan).Sort();
-                }
+                get => _items;
             }
-        }
 
-        public void SimpleStdSortBytes()
-        {
-            if (SortOrder == SortOrder.Ascending)
+            public int Step
             {
-                for (int scan = 0; scan < (SortDirection == SortDirection.Horizontal ? _imageWidth : _imageHeight); scan++)
-                {
-                    BuildSimpleSpanFromBytes(scan).Sort();
-                }
+                get => _step;
             }
-        }
-
-        public void SimpleStdSortPixels()
-        {
-            if (SortOrder == SortOrder.Ascending)
-            {
-                for (int scan = 0; scan < (SortDirection == SortDirection.Horizontal ? _imageWidth : _imageHeight); scan++)
-                {
-                    BuildSimpleSpanFromPixels(scan).Sort();
-                }
-            }
-        }
-
-
-        private unsafe static void SwapIfGreaterWithValues<TPixel>(Span<TPixel> keys, IComparer<TPixel> comparer, int i, int j)
-        {
-            if (comparer.Compare(keys[i], keys[j]) > 0)
-            {
-                Swap(keys, i, j);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Swap<TPixel>(Span<TPixel> keys, int i, int j)
-        {
-            TPixel k = keys[i];
-            keys[i] = keys[j];
-            keys[j] = k;
         }
     }
 }

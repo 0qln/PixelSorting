@@ -55,7 +55,7 @@ namespace TestDataGenerator
                 byte[] unsorted = new byte[datasize.Size];
                 rng.NextBytes(unsorted);
                 byte[] sorted = unsorted.ToArray();
-                Sorter.InsertionSort<byte>(sorted, comparer:null, datasize.Step, datasize.From, datasize.To);
+                Sorter<byte>.InsertionSort(sorted, comparer:default, datasize.Step, datasize.From, datasize.To);
 
                 yield return new(datasize, unsorted, sorted);
             }
@@ -71,7 +71,7 @@ namespace TestDataGenerator
                 rng.NextBytes(bytes);
                 TStruct[] unsorted = ByteArrayToStructArray<TStruct>(bytes);
                 TStruct[] sorted = unsorted.ToArray();
-                Sorter.InsertionSort(sorted, comparer, datasize.Step, datasize.From, datasize.To);
+                Sorter<TStruct>.InsertionSort(sorted, comparer, datasize.Step, datasize.From, datasize.To);
 
                 yield return new(datasize, unsorted, sorted);
             }

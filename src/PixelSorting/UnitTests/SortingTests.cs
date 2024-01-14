@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace UnitTests
@@ -77,95 +78,26 @@ namespace UnitTests
     public class SortingTests
     {
         [Theory]
-        [InlineData(100, 1, 1, 1)]
-        [InlineData(1000, 1, 1, 1)]
-        public void InsertionSort(int Size, int Step, int From, int To)
+        [InlineData(5, 1, 0, 5)]
+
+        [InlineData(100, 1, 0, 100)]
+        [InlineData(100, 2, 0, 100)]
+        [InlineData(100, 3, 0, 100)]
+        [InlineData(100, 1, 30, 100)]
+        [InlineData(100, 2, 0, 70)]
+        [InlineData(100, 3, 30, 70)]
+        public void InsertionSort_PixelSpan(int size, int step, int from, int to)
         {
-            var tests = Generator.GenerateTestingData<Pixel_24bit>([new(Size, Step, From, To)], new Comparer24bit_soA_stR(), 1);
+            var comparer = new ComparerIntPixel24bit_soA_stR4();
+
+            var tests = Generator.GenerateTestingData<int>([new (size, step, from, to)], comparer, 69);
 
             foreach (var test in tests)
             {
-                // Sort
-                Sorter.InsertionSort<Pixel_24bit>(test.Unsorted, comparer: default, Step, From, To);
-
-                // Assert
-                Assert.True(test.Unsorted.SequenceEqual(test.Sorted));
+                Sorter<int>.InsertionSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
+                Assert.True(test.Sorted.SequenceEqual(test.Unsorted, EqualityComparer<int>.Create((a, b) => comparer.Compare(a, b) == 0)));
             }
         }
 
-        [Fact]
-        public void InsertionSort_24bit()
-        {
-            var pixeltests = Generator.GenerateTestingData<Pixel_24bit>([new(1000, 1, 0, 1000)], new Comparer24bit_soA_stR(), 1);
-            var bytetest = pixeltests.Select(test =>
-            {
-                TestInstance<byte> ret = new TestInstance<byte>
-                {
-                    Properties = test.Properties,
-                    Unsorted = test.Unsorted.SelectMany<Pixel_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-                    Sorted = test.Sorted.SelectMany<Pixel_24bit, byte>(pixel => [pixel.R, pixel.G, pixel.B]).ToArray(),
-                };
-                return ret;
-            }).ToList();
-
-            foreach (var test in bytetest)
-            {
-                // The sorting method to test: 
-                Sorter.InsertionSort_24bit(test.Unsorted, new ComparerByByte24bit_soA(), 0, test.Properties.Step, test.Properties.From, test.Properties.To);
-
-                // Assert result
-                Assert.True(test.Sorted.SequenceEqual(test.Unsorted));
-            }
-        }
-
-        [Fact]
-        public void InsertionSort_24bitAsInt()
-        {
-            var pixeltests = Generator.GenerateTestingData<Pixel_24bit>([new(1000, 1, 0, 1000)], new Comparer24bit_soA_stR(), 1);
-            var bytetest = pixeltests.Select(test =>
-            {
-                TestInstance<int> ret = new TestInstance<int>
-                {
-                    Properties = test.Properties,
-                    Unsorted = test.Unsorted.Select<Pixel_24bit, int>(pixel => BitConverter.ToInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-                    Sorted = test.Sorted.Select<Pixel_24bit, int>(pixel => BitConverter.ToInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-                };
-                return ret;
-            }).ToList();
-
-            foreach (var test in bytetest)
-            {
-                // The sorting method to test: 
-                Sorter.InsertionSort_24bitAsInt(test.Unsorted, new ComparerIntPixel24bit_soA_stR4(), test.Properties.Step, test.Properties.From, test.Properties.To);
-
-                // Assert result
-                Assert.True(test.Sorted.SequenceEqual(test.Unsorted));
-            }
-        }
-
-        [Fact]
-        public void InsertionSort_24bitAsUInt()
-        {
-            var pixeltests = Generator.GenerateTestingData<Pixel_24bit>([new(1000, 1, 0, 1000)], new Comparer24bit_soA_stR(), 1);
-            var bytetest = pixeltests.Select(test =>
-            {
-                TestInstance<uint> ret = new TestInstance<uint>
-                {
-                    Properties = test.Properties,
-                    Unsorted = test.Unsorted.Select<Pixel_24bit, uint>(pixel => BitConverter.ToUInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-                    Sorted = test.Sorted.Select<Pixel_24bit, uint>(pixel => BitConverter.ToUInt32([pixel.R, pixel.G, pixel.B, 0])).ToArray(),
-                };
-                return ret;
-            }).ToList();
-
-            foreach (var test in bytetest)
-            {
-                // The sorting method to test: 
-                Sorter.InsertionSort_24bitAsUInt(test.Unsorted, new ComparerUIntPixel24bit_soA_stR1(), test.Properties.Step, test.Properties.From, test.Properties.To);
-
-                // Assert result
-                Assert.True(test.Sorted.SequenceEqual(test.Unsorted));
-            }
-        }
     }
 }
