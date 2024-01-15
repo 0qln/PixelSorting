@@ -106,6 +106,11 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => a.B - b.B;
                 }
+
+                public class _24bitExplicitStruct : IComparer<Pixel24bitExplicitStruct>
+                {
+                    public int Compare(Pixel24bitExplicitStruct a, Pixel24bitExplicitStruct b) => a.B - b.B;
+                }
             }
 
             /// <summary> Sort according to the hue value. </summary>

@@ -29,7 +29,7 @@ var bmp = Imaging.Utils.GetBitmap(SOURCE);
 var data = Imaging.Utils.ExposeData(bmp);
 var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-sorter.Sort(SortDirection.Vertical, new PixelComparer.Ascending.Hue._24bitExplicitStruct());
+sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Hue._24bitExplicitStruct(), new Pixel24bitExplicitStruct { B = 230, G = 230, R = 0 });
 
 bmp.Save(RESULT);
 

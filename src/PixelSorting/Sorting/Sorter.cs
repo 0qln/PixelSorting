@@ -153,10 +153,46 @@ namespace Sorting
         }
 
 
-        public unsafe Span<TPixel> GetRowSpan(int y)
+        // TODO: implement custom iterator pattern for these: 
+
+        public unsafe bool NextRowPixelSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorX)
+        // TODO: create a span around `_pixels` while iterating it (?)
         {
-            return new Span<TPixel>(_pixels + y * _imageWidth, _imageWidth);
+            // Get current lo.
+            int lo = iteratorX + y * _imageWidth;
+
+            // Go to next span start.
+            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX++], threshhold) < 0)
+
+            // Get current lo.
+            lo = iteratorX + y * _imageWidth;
+            
+            // Get next span width.
+            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX], threshhold) > 0)
+            {
+                iteratorX++;
+            }
+
+            // If we are at the end of the row: reset iterator and return false.
+            // This will also handle the first loop if it gets to the end.
+            if (iteratorX >= _imageWidth)
+            {
+                iteratorX = 0;
+                span = default;
+                return false;
+            }
+
+            // Assign span and return true.
+            int hi = lo + iteratorX;
+            span = new PixelSpan(_pixels, 1, lo, hi);
+            return true;
         }
+
+        //public unsafe bool NextColPixelSpan(int x, IComparer<TPixel> comparer, int threshhold, out PixelSpan span)
+        //{
+
+        //}
+
 
         public unsafe PixelSpan GetRowPixelSpan(int y)
         {
@@ -178,6 +214,30 @@ namespace Sorting
                     for (int row = 0; row < _imageHeight; row++)
                     {
                         IntrospectiveSort(GetRowPixelSpan(row), comparer);
+                    }
+                    break;
+
+                case SortDirection.Vertical:
+                    for (int col = 0; col < _imageWidth; col++)
+                    {
+                        IntrospectiveSort(GetColPixelSpan(col), comparer);
+                    }
+                    break;
+            }
+        }
+
+
+        public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)
+        {
+            switch (sortDirection)
+            {
+                case SortDirection.Horizontal:
+                    for (int row = 0; row < _imageHeight-1; row++)
+                    {
+                        int iteratorX = 0;
+                        while (NextRowPixelSpan(row, comparer, threshhold, out PixelSpan span, ref iteratorX)) {
+                            IntrospectiveSort(span, comparer);
+                        }
                     }
                     break;
 
