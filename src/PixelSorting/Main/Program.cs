@@ -18,34 +18,30 @@ using TestDataGenerator;
 const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
 const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT.bmp";
 
-
-
 #pragma warning disable CA1416 // Validate platform compatibility
-var bmp = Imaging.Utils.GetBitmap(SOURCE);
-var data = Imaging.Utils.ExposeData(bmp);
-var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
+//var bmp = Imaging.Utils.GetBitmap(SOURCE);
+//var data = Imaging.Utils.ExposeData(bmp);
+//var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-bmp.Save(RESULT);
+//sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
+
+//bmp.Save(RESULT);
+
 #pragma warning restore CA1416 // Validate platform compatibility
 
+//// Assert Layout (stoopid (dodn't))
+//Debug.Assert((new Pixel32bitStruct { A = 255 }).A == (new Pixel32bitStruct { A = 255 }).A);
+//Debug.Assert((new Pixel32bitStruct { R = 255 }).R == (new Pixel32bitStruct { R = 255 }).R);
+//Debug.Assert((new Pixel32bitStruct { G = 255 }).G == (new Pixel32bitStruct { G = 255 }).G);
+//Debug.Assert((new Pixel32bitStruct { B = 255 }).B == (new Pixel32bitStruct { B = 255 }).B);
 
-//var pixel = Pixel32bit_Util.FromARGB(10, 20, 30, 40);
-
-//Console.WriteLine(pixel.ToPixelString());
-
-//pixel = pixel & Pixel32bit_Util.AMask;
-
-//Console.WriteLine(pixel.ToPixelString());
-
-
-//BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
+BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 public class SortBenchmark
 {
-    private readonly ComparerIntPixel_soA_stR_1 _comparer = new();
+    private readonly PixelComparer.Ascending.Red._32bit _comparer = new();
 
     public IEnumerable<TestDataSize> valuesFordatasizes => Generator.GetDefaultTestingDataset();
 
@@ -119,7 +115,7 @@ public class SpanBenchmark
     [Params(100, 10, 1, 3)]
     public int Step { get; set; }
 
-    private ComparerIntPixel_soA_stR_1 comparer = new();
+    private PixelComparer.Ascending.Red._32bit comparer = new();
     List<TestInstance<Pixel32bit>> data;
 
     public SpanBenchmark()
@@ -149,9 +145,9 @@ public class ComparingBenchmark
     [ParamsSource(nameof(comparers))]
     public IComparer<Pixel32bit> comparer;
     public IEnumerable<IComparer<Pixel32bit>> comparers => [ 
-        new PixelComparer_soA_stR_32bit(),
-        new ComparerIntPixel_soA_stR_1(), 
-        new ComparerIntPixel_soA_stR_2(),
+        //new PixelComparer_soA_stR_32bit(),
+        //new ComparerIntPixel_soA_stR_1(), 
+        //new ComparerIntPixel_soA_stR_2(),
         new PixelComparer.Ascending.Red._32bit(),
     ];
 
@@ -173,8 +169,9 @@ public class ComparingBenchmark
 
 
 [GenericTypeArguments(typeof(Pixel32bit), typeof(PixelComparer.Ascending.Red._32bit))]
-[GenericTypeArguments(typeof(Pixel24bitStruct), typeof(PixelComparer.Ascending.Red._24bit))]
-[GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitRecord))]
+[GenericTypeArguments(typeof(Pixel32bitUnion), typeof(PixelComparer.Ascending.Red._32bitUnion))]
+[GenericTypeArguments(typeof(Pixel32bitStruct), typeof(PixelComparer.Ascending.Red._32bitStruct))]
+[GenericTypeArguments(typeof(Pixel32bitExplicitStruct), typeof(PixelComparer.Ascending.Red._32bitExplicitStruct))]
 /*
 | Type                                                           | Method | SIZE                 | Mean        | Error     | StdDev    |
 |--------------------------------------------------------------- |------- |--------------------- |------------:|----------:|----------:|
@@ -189,7 +186,38 @@ public class ComparingBenchmark
 | GenericPixelStructureBenchmark<Int32, _32bit>                  | Pixel  | TestD(...)000 } [63] | 2,401.08 us | 42.840 us | 54.178 us |
 | GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | TestD(...)000 } [63] | 2,837.27 us |  9.344 us |  7.803 us |
 | GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | TestD(...)000 } [63] | 2,707.20 us | 34.741 us | 32.496 us |
-*/
+
+
+| Type                                                                           | Method | SIZE                 | Mean        | Error     | StdDev    |
+|------------------------------------------------------------------------------- |------- |--------------------- |------------:|----------:|----------:|
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [59] |    13.37 us |  0.235 us |  0.271 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [59] |    18.23 us |  0.064 us |  0.060 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [59] |    18.26 us |  0.063 us |  0.059 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [59] |    14.20 us |  0.282 us |  0.431 us |
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [61] |   210.65 us |  1.039 us |  0.868 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [61] |   209.87 us |  0.800 us |  0.668 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [61] |   210.34 us |  0.706 us |  0.660 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [61] |   187.86 us |  0.813 us |  0.679 us |
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [63] | 2,313.41 us | 10.993 us |  9.179 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [63] | 2,284.46 us | 21.973 us | 19.479 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [63] | 2,249.94 us | 20.948 us | 17.493 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [63] | 2,180.54 us | 22.532 us | 21.077 us |
+|------------------------------------------------------------------------------- |------- |--------------------- |------------:|----------:|----------:|
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [59] |    13.43 us |  0.163 us |  0.136 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [59] |    15.88 us |  0.075 us |  0.070 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [59] |    16.02 us |  0.132 us |  0.117 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [59] |    13.77 us |  0.091 us |  0.076 us |
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [61] |   218.08 us |  3.859 us |  3.610 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [61] |   223.13 us |  0.734 us |  0.686 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [61] |   211.53 us |  0.846 us |  0.707 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [61] |   187.66 us |  0.828 us |  0.774 us |
+| GenericPixelStructureBenchmark<Int32, _32bit>                                  | Pixel  | TestD(...)000 } [63] | 2,239.87 us | 34.779 us | 32.533 us |
+| GenericPixelStructureBenchmark<Pixel32bitExplicitStruct, _32bitExplicitStruct> | Pixel  | TestD(...)000 } [63] | 2,206.87 us | 10.678 us |  9.466 us |
+| GenericPixelStructureBenchmark<Pixel32bitStruct, _32bitStruct>                 | Pixel  | TestD(...)000 } [63] | 2,210.49 us |  9.911 us |  8.276 us |
+| GenericPixelStructureBenchmark<Pixel32bitUnion, _32bitUnion>                   | Pixel  | TestD(...)000 } [63] | 2,153.10 us |  8.551 us |  7.140 us |
+
+ */
+
 public class GenericPixelStructureBenchmark<TPixel, TComparer>
     where TPixel : struct
     where TComparer : IComparer<TPixel>, new()
@@ -213,7 +241,7 @@ public class GenericPixelStructureBenchmark<TPixel, TComparer>
     {
         // Take the extra step to cast the same data into different sizes. Otherwise, bytes might get
         // shifted into places they werent in a pixel of different size.
-        var defaulttests = Generator.GenerateTestingData<Pixel24bitStruct>(TestInstancesSource, new PixelComparer.Ascending.Red._24bit(), 420).ToList();
+        var defaulttests = Generator.GenerateTestingData<Pixel24bitStruct>(TestInstancesSource, new PixelComparer.Ascending.Red._24bitStruct(), 69).ToList();
         foreach (var test in defaulttests) testInstances.Add(test.Properties, CastTo<TPixel>(test));
     }
 
@@ -231,7 +259,10 @@ public class GenericPixelStructureBenchmark<TPixel, TComparer>
         {
             { typeof(Pixel32bit), x24 => Pixel32bit_Util.From24bit(x24) },
             { typeof(Pixel24bitStruct), x24 => x24 },
-            { typeof(Pixel24bitRecord), x24 => new Pixel24bitRecord(x24.R, x24.G, x24.B) }
+            { typeof(Pixel24bitRecord), x24 => new Pixel24bitRecord(x24.R, x24.G, x24.B) },
+            { typeof(Pixel32bitUnion), x24 => new Pixel32bitUnion { A = 255, R = x24.R, G = x24.G, B = x24.B } },
+            { typeof(Pixel32bitStruct), x24 => new Pixel32bitStruct{ A = 255, R = x24.R, G = x24.G, B = x24.B } },
+            { typeof(Pixel32bitExplicitStruct), x24 => new Pixel32bitExplicitStruct{ A = 255, R = x24.R, G = x24.G, B = x24.B } }
         };
 
         return new TestInstance<TResultPixel>

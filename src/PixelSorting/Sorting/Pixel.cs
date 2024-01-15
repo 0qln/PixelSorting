@@ -43,12 +43,13 @@ namespace Sorting
 
         public static Pixel32bit From24bit(Pixel24bitStruct pixel24Bit)
         {
-            return
-                unchecked(
+            return (int)
+                unchecked((uint)(
+                255 << AShift |
                 pixel24Bit.R << RShift |
                 pixel24Bit.G << GShift |
                 pixel24Bit.B << BShift
-                );
+            ));
         }
 
         public static string ToPixelString(this Pixel32bit pixel)
@@ -147,52 +148,6 @@ namespace Sorting
     #endregion
 
 
-    #region Depricated pixel formats
-    public struct _24bit(byte r, byte g, byte b)
-    {
-        public override string ToString()
-        {
-            return $"{{{R}, {G}, {B}}}";
-        }
-
-        public byte R = r, G = g, B = b;
-
-        public static Pixel ToPixel_24bit(_24bit input)
-        {
-            return new Pixel(input.R, input.G, input.B);
-        }
-
-        public static RawPixel_24bit ToRawPixel_24bit(_24bit input)
-        {
-            return new RawPixel_24bit(input.R, input.G, input.B);
-        }
-
-        public static ArrayPixel2ro_24bit ToArrayPixel2ro_24bit(_24bit input)
-        {
-            return new ArrayPixel2ro_24bit([input.R, input.G, input.B]);
-        }
-
-        public static ArrayPixel2_24bit ToArrayPixel2_24bit(_24bit input)
-        {
-            return new ArrayPixel2_24bit([input.R, input.G, input.B]);
-        }
-
-        public static FlatPixel_24bit ToFlatPixel_24bit(_24bit input)
-        {
-            return new FlatPixel_24bit(input.R, input.G, input.B);
-        }
-
-
-        //public static unsafe Memory<byte> ToByteArrayAsWrapper(_24bit input)
-        //{
-        //    return new Memory<byte>(&input._r, 3);
-        //}
-
-        //public static unsafe SpanPixel_24bit ToSpanPixel_24bit_24bit(_24bit input)
-        //{
-        //    return new SpanPixel_24bit(&input._r);
-        //}
-    }
 
     public record struct Pixel24bitRecord(byte R, byte G, byte B);
 
@@ -204,96 +159,101 @@ namespace Sorting
             B = b;
     }
 
-    public record struct Pixel(byte R, byte G, byte B);
-
-    public struct RawPixel_24bit(byte r, byte g, byte b)
+    /// <summary>
+    /// Trying to get the best from both worlds, speed of handling as `Int32`, and quick
+    /// pixel property (e.g. r,g,b) access from using as single byte.
+    /// Benchmarks show this to be slightly superior.
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct Pixel32bitUnion
     {
-        public byte
-            R = r,
-            G = g,
-            B = b;
+        [FieldOffset(0)] public int Int;
+        [FieldOffset(0)] public byte B;
+        [FieldOffset(1)] public byte G;
+        [FieldOffset(2)] public byte R;
+        [FieldOffset(3)] public byte A;
     }
 
-    public struct ArrayPixel2ro_24bit(byte[] rgb)
+    /// <summary>
+    /// </summary>
+    [StructLayout(LayoutKind.Explicit)]
+    public struct Pixel32bitExplicitStruct
     {
-        public readonly byte R = rgb[0];
-        public readonly byte G = rgb[1];
-        public readonly byte B = rgb[2];
+        [FieldOffset(0)] public byte B;
+        [FieldOffset(1)] public byte G;
+        [FieldOffset(2)] public byte R;
+        [FieldOffset(3)] public byte A;
     }
 
-    public struct ArrayPixel2_24bit(byte[] rgb)
-    {
-        public byte R = rgb[0];
-        public byte G = rgb[1];
-        public byte B = rgb[2];
-    }
-
+    /// <summary>
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct FlatPixel_24bit(byte r, byte g, byte b)
+    public struct Pixel32bitStruct
     {
-        public byte
-            R = r,
-            G = g,
-            B = b;
+        public byte B;
+        public byte G;
+        public byte R;
+        public byte A;
     }
 
-    //public readonly unsafe ref struct SpanPixel_24bit
-    //{
-    //    private const int _length = 3;
-    //    internal readonly byte* _reference;
+    #region Experimental Pixel Structures
 
-    //    public unsafe SpanPixel_24bit(byte* reference)
-    //    {
-    //        _reference = reference;
-    //    }
+    /// <summary>
+    /// Currently unusable, due to the `ref` keyword, which is neccessary, but prevents
+    /// the structure from being used as a type argument.
+    /// </summary>
+    public readonly unsafe ref struct Pixel24bitSpan
+    {
+        private readonly ref byte _reference;
 
-    //    public unsafe ref byte R
-    //    {
-    //        get
-    //        {
-    //            return ref _reference[0];
-    //        }
-    //    }
 
-    //    public unsafe ref byte G
-    //    {
-    //        get
-    //        {
-    //            return ref _reference[1];
-    //        }
-    //    }
+        public unsafe Pixel24bitSpan(ref byte reference)
+        {
+            _reference = ref reference;
+        }
 
-    //    public unsafe ref byte B
-    //    {
-    //        get
-    //        {
-    //            return ref _reference[2];
-    //        }
-    //    }
-    //}
+
+        public unsafe ref byte R
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref _reference;
+            }
+        }
+
+        public unsafe ref byte G
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Unsafe.Add(ref _reference, 1);
+            }
+        }
+
+        public unsafe ref byte B
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Unsafe.Add(ref _reference, 2);
+            }
+        }
+    }
     #endregion
 
     #region Comparers
 
-
-    /// <summary>
-    /// A collection of differenct hardcoded pixel comparers.
-    /// </summary>
+    /// <summary> A collection of differenct hardcoded pixel comparers. </summary>
     public class PixelComparer
     {
-        /// <summary>
-        /// In ascending sort order.
-        /// </summary>
+        /// <summary> In ascending sort order. </summary>
         public class Ascending
         {
-            /// <summary>
-            /// Sort according to the alpha value.
-            /// </summary>
+            /// <summary> Sort according to the alpha value. </summary>
             public class Alpha
             {
-                /// <summary>
-                /// 32 bit pixel format.
-                /// </summary>
+                /// <summary> 32 bit pixel format. </summary>
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedA() - b.UnshiftedA();
@@ -302,35 +262,52 @@ namespace Sorting
 
             public class Red
             {
-                /// <summary>
-                /// 32 bit pixel format.
-                /// </summary>
+                /// <summary> 32 bit pixel format. </summary>
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedR() - b.UnshiftedR();
                 }
-                /// <summary>
-                /// 24 bit pixel format.
-                /// </summary>
-                public class _24bit : IComparer<Pixel24bitStruct>
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => a.R - b.R;
+                }
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitExplicitStruct : IComparer<Pixel32bitExplicitStruct>
+                { 
+                    public int Compare(Pixel32bitExplicitStruct a, Pixel32bitExplicitStruct b) => a.R - b.R;
+                }
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitStruct : IComparer<Pixel32bitStruct>
+                {
+                    public int Compare(Pixel32bitStruct a, Pixel32bitStruct b) => a.R - b.R;
+                }
+
+                /// <summary> 24 bit pixel format. </summary>
+                public class _24bitStruct : IComparer<Pixel24bitStruct>
                 {
                     public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => a.R - b.R;
                 }
 
-                /// <summary>
-                /// temp
-                /// </summary>
+                /// <summary> 24 bit pixel format. </summary>
                 public class _24bitRecord : IComparer<Pixel24bitRecord>
                 {
                     public int Compare(Pixel24bitRecord a, Pixel24bitRecord b) => a.R - b.R;
                 }
+
+                ///// <summary> 24 bit pixel format. </summary>
+                //public class _24bitSpan : IComparer<Pixel24bitSpan>
+                //{
+                //    public int Compare(Pixel24bitSpan a, Pixel24bitSpan b) => a.R - b.R;
+                //}
             }
 
             public class Green
             {
-                /// <summary>
-                /// 32 bit pixel format.
-                /// </summary>
+                /// <summary> 32 bit pixel format. </summary>
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedG() - b.UnshiftedG();
@@ -339,9 +316,7 @@ namespace Sorting
 
             public class Blue
             {
-                /// <summary>
-                /// 32 bit pixel format.
-                /// </summary>
+                /// <summary> 32 bit pixel format. </summary>
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedB() - b.UnshiftedB();
@@ -349,23 +324,17 @@ namespace Sorting
             }
         }
 
-        /// <summary>
-        /// In descending sort order.
-        /// </summary>
+        /// <summary> In descending sort order. </summary>
         public class Descending
         {
             public class Red
             {
-                /// <summary>
-                /// 32 bit pixel format.
-                /// </summary>
+                /// <summary> 32 bit pixel format. </summary>
                 public class _32bit : IComparer<Pixel32bit>
                 {
                     public int Compare(Pixel32bit a, Pixel32bit b) => b.UnshiftedR() - a.UnshiftedR();
                 }
-                /// <summary>
-                /// 24 bit pixel format.
-                /// </summary>
+                /// <summary> 24 bit pixel format. </summary>
                 public class _24bit : IComparer<Pixel24bitStruct>
                 {
                     public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => b.R - a.R;
@@ -374,107 +343,6 @@ namespace Sorting
         }
     }
 
-    /// <summary>SortOder (so): Ascending | SortType (st): Alpha</summary>
-    public class PixelComparer_soA_stA : IComparer<Pixel32bit>
-    {
-        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedA() - b.UnshiftedA();
-    }
-
-    /// <summary>SortOder (so): Ascending | SortType (st): Red</summary>
-    public class PixelComparer_soA_stR_32bit : IComparer<Pixel32bit>
-    {
-        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedR() - b.UnshiftedR();
-    }
-
-    /// <summary>SortOder (so): Ascending | SortType (st): Green</summary>
-    public class PixelComparer_soA_stG : IComparer<Pixel32bit>
-    {
-        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedG() - b.UnshiftedG();
-    }
-
-    /// <summary>SortOder (so): Ascending | SortType (st): Blue</summary>
-    public class PixelComparer_soA_stB : IComparer<Pixel32bit>
-    {
-        public int Compare(Pixel32bit a, Pixel32bit b) => a.UnshiftedB() - b.UnshiftedB();
-    }
-
-
-    // Others...
-
-    #region Depricated Pixel structures
-    public class Comparer24bit_soA_stR : IComparer<Pixel>
-    {
-        public int Compare(Pixel a, Pixel b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public class ComparerJust24bit_soA_stR : IComparer<_24bit>
-    {
-        public int Compare(_24bit a, _24bit b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public class ComparerRaw24bit_soA_stR : IComparer<RawPixel_24bit>
-    {
-        public int Compare(RawPixel_24bit a, RawPixel_24bit b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public class ComparerArrayPixel224bit_soA_stR : IComparer<ArrayPixel2_24bit>
-    {
-        public int Compare(ArrayPixel2_24bit a, ArrayPixel2_24bit b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public class ComparerArrayPixel2ro24bit_soA_stR : IComparer<ArrayPixel2ro_24bit>
-    {
-        public int Compare(ArrayPixel2ro_24bit a, ArrayPixel2ro_24bit b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public class ComparerFlatPixel24bit_soA_stR : IComparer<FlatPixel_24bit>
-    {
-        public int Compare(FlatPixel_24bit a, FlatPixel_24bit b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-    public unsafe class ComparerByReference24bit_soA_stR : IComparer<nint>
-    {
-        public int Compare(nint aptr, nint bptr)
-        {
-            var a = Unsafe.AsRef<byte>((byte*)aptr);
-            var b = Unsafe.AsRef<byte>((byte*)aptr);
-            return a - b;
-        }
-    }
-    public unsafe class ComparerByByte24bit_soA : IComparer<byte>
-    {
-        public int Compare(byte a, byte b)
-        {
-            return a.CompareTo(b);
-        }
-    }
-    #endregion
-    public class ComparerIntPixel_soA_stR_1 : IComparer<int>
-    {
-        public int Compare(int a, int b)
-        {
-            return a.R() - b.R();
-        }
-    }
-    public class ComparerIntPixel_soA_stR_2 : IComparer<int>
-    {
-        public int Compare(int a, int b)
-        {
-            return a.UnshiftedR() - b.UnshiftedR();
-        }
-    }
 
     #region UInt
     public class ComparerUIntPixel24bit_soA_stR1 : IComparer<uint>
@@ -515,52 +383,6 @@ namespace Sorting
     }
     #endregion
 
-
-    #endregion
-
-    #region Experimental
-
-    public class StaticComparer24bit_soA_stR
-    {
-        public static int StaticCompare(Pixel a, Pixel b)
-        {
-            return a.R.CompareTo(b.R);
-        }
-    }
-
-    public struct SimpleComparablePixel(params byte[] data) : IComparable
-    {
-        public byte[] Data = data;
-
-        public int CompareTo(object? obj)
-        {
-            return Data[0].CompareTo(((SimpleComparablePixel)obj!).Data[0]);
-        }
-    }
-
-    public struct ComparablePixel(params byte[] data) : IComparable
-    {
-        public SortDirection SortDirection = SortDirection.Horizontal;
-        public SortOrder SortOrder = SortOrder.Ascending;
-        public SortType SortType = SortType.Red;
-
-        public byte[] Data = data;
-        public byte R => Data[0];
-
-
-        public int CompareTo(object? obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            int ret = (int)SortDirection;
-            ret *= SortType switch
-            {
-                SortType.Red => R.CompareTo(((ComparablePixel)obj).R),
-                _ => throw new NotSupportedException(),
-            };
-            return ret;
-        }
-    }
 
     #endregion
 }

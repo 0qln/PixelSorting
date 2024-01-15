@@ -11,37 +11,6 @@ namespace Imaging
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-        public static void Save(Pixel[,] pixels, string path)
-        {
-            Bitmap bmp = new Bitmap(pixels.GetLength(0), pixels.GetLength(1));
-
-            for (int x = 0; x < pixels.GetLength(0); x++)
-            {
-                for (int y = 0; y < pixels.GetLength(1); y++)
-                {
-                    Pixel p = pixels[x, y];
-                    bmp.SetPixel(x, y, Color.FromArgb(255, p.R, p.G, p.B));
-                }
-            }
-
-            bmp.Save(path);
-        }
-
-
-        public static void Load(Pixel[,] pixels, string path)
-        {
-            Bitmap bmp = new Bitmap(path);
-
-            for (int x = 0; x < pixels.GetLength(0); x++)
-            {
-                for (int y = 0; y < pixels.GetLength(1); y++)
-                {
-                    pixels[x, y].R = bmp.GetPixel(x, y).R;
-                    pixels[x, y].G = bmp.GetPixel(x, y).G;
-                    pixels[x, y].B = bmp.GetPixel(x, y).B;
-                }
-            }
-        }
         
         
         public delegate TPixel PixelCreator<TPixel>(byte A, byte R, byte G, byte B);
