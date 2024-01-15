@@ -1,3 +1,6 @@
+using Sorting.Pixels._24;
+using Sorting.Pixels._32;
+using Sorting.Pixels.Comparer;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

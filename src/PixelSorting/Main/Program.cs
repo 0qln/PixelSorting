@@ -7,12 +7,17 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Imaging;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Diagnostics.Runtime.Utilities;
 using Sorting;
+using Sorting.Pixels._24;
+using Sorting.Pixels._32;
+using Sorting.Pixels.Comparer;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using TestDataGenerator;
+
 
 
 const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
@@ -22,16 +27,16 @@ const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)_
 
 var bmp = Imaging.Utils.GetBitmap(SOURCE);
 var data = Imaging.Utils.ExposeData(bmp);
-var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
+sorter.Sort(SortDirection.Vertical, new PixelComparer.Ascending.Hue._24bitExplicitStruct());
 
 bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
 
 
-BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
+//BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 public class SortBenchmark

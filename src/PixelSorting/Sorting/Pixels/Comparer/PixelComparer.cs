@@ -22,8 +22,15 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitInt a, Pixel32bitInt b) => a.UnshiftedA() - b.UnshiftedA();
                 }
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => a.A - b.A;
+                }
             }
 
+            /// <summary> Sort according to the red value. </summary>
             public abstract class Red
             {
                 /// <summary> 32 bit pixel format. </summary>
@@ -69,6 +76,7 @@ namespace Sorting.Pixels.Comparer
                 }
             }
 
+            /// <summary> Sort according to the green value. </summary>
             public abstract class Green
             {
                 /// <summary> 32 bit pixel format. </summary>
@@ -76,8 +84,15 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitInt a, Pixel32bitInt b) => a.UnshiftedG() - b.UnshiftedG();
                 }
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => a.G - b.G;
+                }
             }
 
+            /// <summary> Sort according to the blue value. </summary>
             public abstract class Blue
             {
                 /// <summary> 32 bit pixel format. </summary>
@@ -85,12 +100,43 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitInt a, Pixel32bitInt b) => a.UnshiftedB() - b.UnshiftedB();
                 }
+
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => a.B - b.B;
+                }
+            }
+
+            /// <summary> Sort according to the hue value. </summary>
+            public abstract class Hue
+            {
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) 
+                    {
+                        float result = a.GetHue() - b.GetHue();
+                        return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
+                    }
+                }
+
+                /// <summary> 24 bit pixel format. </summary>
+                public class _24bitExplicitStruct : IComparer<Pixel24bitExplicitStruct>
+                {
+                    public int Compare(Pixel24bitExplicitStruct a, Pixel24bitExplicitStruct b)
+                    {
+                        float result = a.GetHue() - b.GetHue();
+                        return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
+                    }
+                }
             }
         }
 
         /// <summary> In descending sort order. </summary>
         public abstract class Descending
         {
+            /// <summary> Sort according to the red value. </summary>
             public abstract class Red
             {
                 /// <summary> 32 bit pixel format. </summary>
@@ -98,10 +144,17 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitInt a, Pixel32bitInt b) => b.UnshiftedR() - a.UnshiftedR();
                 }
+
                 /// <summary> 24 bit pixel format. </summary>
                 public class _24bit : IComparer<Pixel24bitStruct>
                 {
                     public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => b.R - a.R;
+                }
+
+                /// <summary> 24 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) => b.R - a.R;
                 }
             }
         }
