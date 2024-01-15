@@ -18,21 +18,17 @@ using TestDataGenerator;
 const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
 const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT.bmp";
 
+
+
+#pragma warning disable CA1416 // Validate platform compatibility
 var bmp = Imaging.Utils.GetBitmap(SOURCE);
 var data = Imaging.Utils.ExposeData(bmp);
 var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-for (int row = 0; row < data.Height; row++)
-{
-    Sorter<Pixel24bitStruct>.IntrospectiveSort(sorter.GetRowPixelSpan(row), new PixelComparer.Ascending.Red._24bit());
-}
-
-for (int col = 0; col < data.Width; col++)
-{
-    Sorter<Pixel24bitStruct>.IntrospectiveSort(sorter.GetColPixelSpan(col), new PixelComparer.Ascending.Red._24bit());
-}
+sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
 
 bmp.Save(RESULT);
+#pragma warning restore CA1416 // Validate platform compatibility
 
 
 //var pixel = Pixel32bit_Util.FromARGB(10, 20, 30, 40);

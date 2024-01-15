@@ -354,7 +354,23 @@ namespace Sorting
         /// </summary>
         public class Descending
         {
-
+            public class Red
+            {
+                /// <summary>
+                /// 32 bit pixel format.
+                /// </summary>
+                public class _32bit : IComparer<Pixel32bit>
+                {
+                    public int Compare(Pixel32bit a, Pixel32bit b) => b.UnshiftedR() - a.UnshiftedR();
+                }
+                /// <summary>
+                /// 24 bit pixel format.
+                /// </summary>
+                public class _24bit : IComparer<Pixel24bitStruct>
+                {
+                    public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => b.R - a.R;
+                }
+            }
         }
     }
 

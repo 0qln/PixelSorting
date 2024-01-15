@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sorting
 {
@@ -126,11 +128,6 @@ namespace Sorting
         private readonly TPixel* _pixels;
 
 
-        public delegate void Sort(SortDirection direction, SortOrder order, SortType type);
-
-        internal delegate void SortInternal(Span<TPixel> keys, IComparer<TPixel> comparer, int step, int from, int to);
-
-
         /// <summary>
         /// Initialize a Sorter.
         /// </summary>
@@ -170,6 +167,27 @@ namespace Sorting
         public unsafe PixelSpan GetColPixelSpan(int x)
         {
             return new PixelSpan(_pixels, _imageWidth, x, _pixelCount);
+        }
+
+
+        public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer)
+        {
+            switch (sortDirection)
+            {
+                case SortDirection.Horizontal:
+                    for (int row = 0; row < _imageHeight; row++)
+                    {
+                        IntrospectiveSort(GetRowPixelSpan(row), comparer);
+                    }
+                    break;
+
+                case SortDirection.Vertical:
+                    for (int col = 0; col < _imageWidth; col++)
+                    {
+                        IntrospectiveSort(GetColPixelSpan(col), comparer);
+                    }
+                    break;
+            }
         }
 
 
