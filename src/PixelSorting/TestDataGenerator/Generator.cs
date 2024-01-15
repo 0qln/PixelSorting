@@ -13,17 +13,17 @@ namespace TestDataGenerator
 
         public static (int Horizontal, int Vertical)[] CommonImageSizesL() => new[]
         {
-        //(50, 50),
-        //(426, 240),
-        //(640, 360),
-        //(854, 480),
-        //(1280, 720),
-        (1920, 1080),
-        (2560, 1440),
-        (3840, 2160)
+            //(50, 50),
+            //(426, 240),
+            //(640, 360),
+            //(854, 480),
+            //(1280, 720),
+            (1920, 1080),
+            (2560, 1440),
+            (3840, 2160)
         };
 
-        static IEnumerable<TestDataSize> GetVariances(int size)
+        public static IEnumerable<TestDataSize> GetVariances(int size)
         {
             yield return (new TestDataSize { Size = size, Step = 1, From = 0, To = size, });
 
@@ -35,6 +35,18 @@ namespace TestDataGenerator
 
             // Step and window alternation
             yield return (new TestDataSize { Size = size, Step = size / 10, From = size / 10, To = size - size / 10, });
+        }
+
+        public static IEnumerable<TestDataSize> GetRealisticTestingDataset()
+        {
+            foreach (var imgSize in CommonImageSizesL())
+            {
+                // Row
+                yield return new TestDataSize { Size = imgSize.Horizontal, Step = 1, From = 0, To = imgSize.Horizontal };
+
+                // Col
+                yield return new TestDataSize { Size = imgSize.Horizontal * imgSize.Vertical, Step = imgSize.Horizontal, From = 0, To = imgSize.Horizontal * imgSize.Vertical };
+            }
         }
 
         public static IEnumerable<TestDataSize> GetDefaultTestingDataset()

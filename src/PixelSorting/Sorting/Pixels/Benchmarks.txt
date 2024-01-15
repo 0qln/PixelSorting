@@ -1,0 +1,53 @@
+
+| Method                   | dataIndex | Mean        | Error    | StdDev   |
+|------------------------- |---------- |------------:|---------:|---------:|
+| IComparable              | 7         |    21.06 ns | 0.174 ns | 0.163 ns |
+| IComparer                | 7         |    18.22 ns | 0.047 ns | 0.044 ns |
+| ComparisonLambda         | 7         |    18.15 ns | 0.042 ns | 0.038 ns |
+| ComparisonInstacneMethod | 7         |    26.74 ns | 0.323 ns | 0.270 ns |
+| ComparisonStaticMethod   | 7         |    39.83 ns | 0.040 ns | 0.036 ns |
+| IComparable              | 8         | 1,058.71 ns | 2.902 ns | 2.423 ns |
+| IComparer                | 8         |   765.31 ns | 1.124 ns | 0.939 ns |
+| ComparisonLambda         | 8         | 1,145.77 ns | 1.432 ns | 1.340 ns |
+| ComparisonInstacneMethod | 8         |   973.12 ns | 1.268 ns | 1.124 ns |
+| ComparisonStaticMethod   | 8         | 2,377.13 ns | 4.204 ns | 3.726 ns |
+
+| Method                   | dataIndex | Mean       | Error    | StdDev   |
+|------------------------- |---------- |-----------:|---------:|---------:|
+| IComparable              | 8         |   975.7 ns |  8.21 ns |  7.28 ns |
+| IComparer                | 8         |   767.2 ns |  3.73 ns |  3.31 ns |
+| ComparisonLambda         | 8         | 1,159.9 ns | 10.85 ns |  9.06 ns |
+| ComparisonInstacneMethod | 8         | 1,008.5 ns | 20.02 ns | 33.46 ns |
+| ComparisonStaticMethod   | 8         | 2,457.9 ns | 48.35 ns | 69.34 ns |
+| InlineComparisonGeneric  | 8         |   874.2 ns |  9.21 ns |  8.61 ns |
+| InlineComparison         | 8         |   882.4 ns | 16.72 ns | 16.42 ns |
+
+=> IComparer's the way to go
+
+
+
+
+| Method                         | Mean      | Error     | StdDev    |
+|------------------------------- |----------:|----------:|----------:|
+| Pixel_24bit                    |  9.330 us | 0.1713 us | 0.1603 us |
+| InsertionSort_24bitAsInt1      | 42.401 us | 0.8365 us | 0.9959 us |
+| InsertionSort_24bitAsInt2      |  7.909 us | 0.0217 us | 0.0170 us |
+| InsertionSort_24bitAsInt_Anded |  7.970 us | 0.0956 us | 0.0847 us |
+| InsertionSort_24bitAsUInt2     |  9.057 us | 0.0584 us | 0.0547 us |
+| InsertionSort_24bitAsUInt3     | 10.144 us | 0.0179 us | 0.0150 us |
+| InsertionSort_24bitAsUInt4     |  7.985 us | 0.1243 us | 0.1163 us |
+| InsertionSort_24bitAsUInt5     | 10.645 us | 0.2067 us | 0.3510 us |
+
+=> For Number based comparers, choose either UInt method 4, or Int method 2
+=> Inlining the comparisons does not imrove performance, even when caching is possible through it (see `InsertionSort_24bitAsInt_Anded`)
+    
+
+
+    
+| Method            | comparer             | Mean     | Error    | StdDev   |
+|------------------ |--------------------- |---------:|---------:|---------:|
+| IntrospectiveSort | Sorti(...)A_stR [32] | 23.90 ms | 0.181 ms | 0.151 ms |
+| IntrospectiveSort | Sorti(...)stR_1 [34] | 26.20 ms | 0.045 ms | 0.040 ms |
+| IntrospectiveSort | Sorti(...)stR_2 [34] | 23.46 ms | 0.109 ms | 0.091 ms |
+    
+=> Use unshifted values for comparisons.

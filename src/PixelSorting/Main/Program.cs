@@ -20,21 +20,16 @@ const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)_
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-//var bmp = Imaging.Utils.GetBitmap(SOURCE);
-//var data = Imaging.Utils.ExposeData(bmp);
-//var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+var bmp = Imaging.Utils.GetBitmap(SOURCE);
+var data = Imaging.Utils.ExposeData(bmp);
+var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-//sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
+sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bit());
 
-//bmp.Save(RESULT);
+bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
 
-//// Assert Layout (stoopid (dodn't))
-//Debug.Assert((new Pixel32bitStruct { A = 255 }).A == (new Pixel32bitStruct { A = 255 }).A);
-//Debug.Assert((new Pixel32bitStruct { R = 255 }).R == (new Pixel32bitStruct { R = 255 }).R);
-//Debug.Assert((new Pixel32bitStruct { G = 255 }).G == (new Pixel32bitStruct { G = 255 }).G);
-//Debug.Assert((new Pixel32bitStruct { B = 255 }).B == (new Pixel32bitStruct { B = 255 }).B);
 
 BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
@@ -168,11 +163,11 @@ public class ComparingBenchmark
 }
 
 
-[GenericTypeArguments(typeof(Pixel32bit), typeof(PixelComparer.Ascending.Red._32bit))]
-[GenericTypeArguments(typeof(Pixel32bitUnion), typeof(PixelComparer.Ascending.Red._32bitUnion))]
-[GenericTypeArguments(typeof(Pixel32bitStruct), typeof(PixelComparer.Ascending.Red._32bitStruct))]
-[GenericTypeArguments(typeof(Pixel32bitExplicitStruct), typeof(PixelComparer.Ascending.Red._32bitExplicitStruct))]
-/*
+//[GenericTypeArguments(typeof(Pixel32bit), typeof(PixelComparer.Ascending.Red._32bit))]
+//[GenericTypeArguments(typeof(Pixel32bitUnion), typeof(PixelComparer.Ascending.Red._32bitUnion))]
+//[GenericTypeArguments(typeof(Pixel32bitStruct), typeof(PixelComparer.Ascending.Red._32bitStruct))]
+//[GenericTypeArguments(typeof(Pixel32bitExplicitStruct), typeof(PixelComparer.Ascending.Red._32bitExplicitStruct))]
+/* Benchmarks
 | Type                                                           | Method | SIZE                 | Mean        | Error     | StdDev    |
 |--------------------------------------------------------------- |------- |--------------------- |------------:|----------:|----------:|
 | GenericPixelStructureBenchmark<Int32, _32bit>                  | Pixel  | TestD(...)000 } [59] |    13.25 us |  0.100 us |  0.093 us |
@@ -218,15 +213,20 @@ public class ComparingBenchmark
 
  */
 
+
+[GenericTypeArguments(typeof(Pixel24bitStruct), typeof(PixelComparer.Ascending.Red._24bitStruct))]
+[GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitRecord))]
+[GenericTypeArguments(typeof(Pixel24bitExplicitStruct), typeof(PixelComparer.Ascending.Red._24bitExplicitStruct))]
+/* Benchmarks
+all about equal...
+ */
+
+
 public class GenericPixelStructureBenchmark<TPixel, TComparer>
     where TPixel : struct
     where TComparer : IComparer<TPixel>, new()
 {
-    public IEnumerable<TestDataSize> TestInstancesSource => [
-        new TestDataSize { Size = 1000, From = 0, Step = 1, To = 1000 },
-        new TestDataSize { Size = 10000, From = 0, Step = 1, To = 10000 },
-        new TestDataSize { Size = 100000, From = 0, Step = 1, To = 100000 },
-    ];
+    public IEnumerable<TestDataSize> TestInstancesSource => Generator.GetRealisticTestingDataset();
 
     [ParamsSource(nameof(TestInstancesSource))]
     public TestDataSize SIZE;
@@ -257,9 +257,11 @@ public class GenericPixelStructureBenchmark<TPixel, TComparer>
     {
         Dictionary<Type, Func<Pixel24bitStruct, object>> pixelConverter = new()
         {
-            { typeof(Pixel32bit), x24 => Pixel32bit_Util.From24bit(x24) },
             { typeof(Pixel24bitStruct), x24 => x24 },
             { typeof(Pixel24bitRecord), x24 => new Pixel24bitRecord(x24.R, x24.G, x24.B) },
+            { typeof(Pixel24bitExplicitStruct), x24 => new Pixel24bitExplicitStruct { R = x24.R, G = x24.G, B = x24.B } },
+
+            { typeof(Pixel32bit), x24 => Pixel32bit_Util.From24bit(x24) },
             { typeof(Pixel32bitUnion), x24 => new Pixel32bitUnion { A = 255, R = x24.R, G = x24.G, B = x24.B } },
             { typeof(Pixel32bitStruct), x24 => new Pixel32bitStruct{ A = 255, R = x24.R, G = x24.G, B = x24.B } },
             { typeof(Pixel32bitExplicitStruct), x24 => new Pixel32bitExplicitStruct{ A = 255, R = x24.R, G = x24.G, B = x24.B } }
