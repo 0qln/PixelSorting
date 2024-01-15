@@ -15,22 +15,24 @@ using System.Runtime.InteropServices;
 using TestDataGenerator;
 
 
-//const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
-//const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)_32bit.bmp";
+const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
+const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT.bmp";
 
-//var bmp = Imaging.Utils.GetBitmap(SOURCE);
-//var data = Imaging.Utils.ExposeData(bmp);
-//var sorter = new Sorter<Pixel32bit>(data.Scan0, data.Width, data.Height, data.Stride);
+var bmp = Imaging.Utils.GetBitmap(SOURCE);
+var data = Imaging.Utils.ExposeData(bmp);
+var sorter = new Sorter<Pixel24bitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
 
-//List<Pixel_24bit[]> rows = new();
-//for (int row = 0; row < data.Height; row++)
-//{
-//    rows.Add(sorter.GetRow(row).ToArray());
-//}
+for (int row = 0; row < data.Height; row++)
+{
+    Sorter<Pixel24bitStruct>.IntrospectiveSort(sorter.GetRowPixelSpan(row), new PixelComparer.Ascending.Red._24bit());
+}
 
-////var newSorter = sorter.CastToPixelFormat<Pixel32bit>((a, b) => { });
+for (int col = 0; col < data.Width; col++)
+{
+    Sorter<Pixel24bitStruct>.IntrospectiveSort(sorter.GetColPixelSpan(col), new PixelComparer.Ascending.Red._24bit());
+}
 
-//bmp.Save(RESULT);
+bmp.Save(RESULT);
 
 
 //var pixel = Pixel32bit_Util.FromARGB(10, 20, 30, 40);
@@ -42,7 +44,7 @@ using TestDataGenerator;
 //Console.WriteLine(pixel.ToPixelString());
 
 
-BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
+//BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 public class SortBenchmark
@@ -176,39 +178,55 @@ public class ComparingBenchmark
 
 [GenericTypeArguments(typeof(Pixel32bit), typeof(PixelComparer.Ascending.Red._32bit))]
 [GenericTypeArguments(typeof(Pixel24bitStruct), typeof(PixelComparer.Ascending.Red._24bit))]
-[GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitStruct))]
+[GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitRecord))]
 /*
-| Type                                                           | Method | Mean     | Error    | StdDev   |
-|--------------------------------------------------------------- |------- |---------:|---------:|---------:|
-| GenericPixelStructureBenchmark<Pixel32bit, _32bit>             | Pixel  | 676.1 us |  6.39 us |  5.98 us |
-| GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | 797.3 us | 15.83 us | 23.69 us |
-| GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | 721.5 us | 10.57 us |  9.37 us |
+| Type                                                           | Method | SIZE                 | Mean        | Error     | StdDev    |
+|--------------------------------------------------------------- |------- |--------------------- |------------:|----------:|----------:|
+| GenericPixelStructureBenchmark<Int32, _32bit>                  | Pixel  | TestD(...)000 } [59] |    13.25 us |  0.100 us |  0.093 us |
+| GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | TestD(...)000 } [59] |    13.99 us |  0.039 us |  0.035 us |
+| GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | TestD(...)000 } [59] |    14.10 us |  0.049 us |  0.041 us |
+
+| GenericPixelStructureBenchmark<Int32, _32bit>                  | Pixel  | TestD(...)000 } [61] |   199.22 us |  1.019 us |  0.954 us |
+| GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | TestD(...)000 } [61] |   243.98 us |  0.226 us |  0.200 us |
+| GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | TestD(...)000 } [61] |   243.87 us |  0.516 us |  0.483 us |
+
+| GenericPixelStructureBenchmark<Int32, _32bit>                  | Pixel  | TestD(...)000 } [63] | 2,401.08 us | 42.840 us | 54.178 us |
+| GenericPixelStructureBenchmark<Pixel24bitRecord, _24bitStruct> | Pixel  | TestD(...)000 } [63] | 2,837.27 us |  9.344 us |  7.803 us |
+| GenericPixelStructureBenchmark<Pixel24bitStruct, _24bit>       | Pixel  | TestD(...)000 } [63] | 2,707.20 us | 34.741 us | 32.496 us |
 */
 public class GenericPixelStructureBenchmark<TPixel, TComparer>
     where TPixel : struct
     where TComparer : IComparer<TPixel>, new()
 {
-    private IEnumerable<TestInstance<TPixel>> testInstances;
+    public IEnumerable<TestDataSize> TestInstancesSource => [
+        new TestDataSize { Size = 1000, From = 0, Step = 1, To = 1000 },
+        new TestDataSize { Size = 10000, From = 0, Step = 1, To = 10000 },
+        new TestDataSize { Size = 100000, From = 0, Step = 1, To = 100000 },
+    ];
+
+    [ParamsSource(nameof(TestInstancesSource))]
+    public TestDataSize SIZE;
+
+    private Dictionary<TestDataSize, TestInstance<TPixel>> testInstances = new();
+
     private IComparer<TPixel> comparer = new TComparer();
 
 
-    // Precompute the testing data s.d. it does not interferce with the benchmark.
+    // Precompute the all testing data s.d. it does not interferce with the benchmark.
     public GenericPixelStructureBenchmark()
     {
         // Take the extra step to cast the same data into different sizes. Otherwise, bytes might get
         // shifted into places they werent in a pixel of different size.
-        var defaulttests = Generator.GenerateTestingData<Pixel24bitStruct>([new TestDataSize { Size = 10000, From = 0, Step = 1, To = 10000 }], new PixelComparer.Ascending.Red._24bit(), 420).ToList();
-        testInstances = defaulttests.Select(CastTo<TPixel>);
+        var defaulttests = Generator.GenerateTestingData<Pixel24bitStruct>(TestInstancesSource, new PixelComparer.Ascending.Red._24bit(), 420).ToList();
+        foreach (var test in defaulttests) testInstances.Add(test.Properties, CastTo<TPixel>(test));
     }
 
 
     [Benchmark]
     public void Pixel()
     {
-        foreach (var test in testInstances)
-        {
-            Sorter<TPixel>.IntrospectiveSort(new Sorter<TPixel>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
-        }
+        var test = testInstances[SIZE];
+        Sorter<TPixel>.IntrospectiveSort(new Sorter<TPixel>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
     }
 
     private static TestInstance<TResultPixel> CastTo<TResultPixel>(TestInstance<Pixel24bitStruct> instance24bit)

@@ -320,7 +320,7 @@ namespace Sorting
                 /// <summary>
                 /// temp
                 /// </summary>
-                public class _24bitStruct : IComparer<Pixel24bitRecord>
+                public class _24bitRecord : IComparer<Pixel24bitRecord>
                 {
                     public int Compare(Pixel24bitRecord a, Pixel24bitRecord b) => a.R - b.R;
                 }

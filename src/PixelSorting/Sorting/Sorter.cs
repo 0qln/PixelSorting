@@ -156,12 +156,21 @@ namespace Sorting
         }
 
 
-        public unsafe Span<TPixel> GetRow(int y)
+        public unsafe Span<TPixel> GetRowSpan(int y)
         {
             return new Span<TPixel>(_pixels + y * _imageWidth, _imageWidth);
         }
 
-        // TODO: make custom Span<T> ??
+        public unsafe PixelSpan GetRowPixelSpan(int y)
+        {
+            int lo = y * _imageWidth;
+            return new PixelSpan(_pixels, 1, lo, lo + _imageWidth);
+        }
+
+        public unsafe PixelSpan GetColPixelSpan(int x)
+        {
+            return new PixelSpan(_pixels, _imageWidth, x, _pixelCount);
+        }
 
 
         public unsafe Sorter<TResult> CastToPixelFormat<TResult>(Func<TPixel, TResult> pixelConverter)
@@ -202,9 +211,17 @@ namespace Sorting
 
             public PixelSpan(TPixel[] reference, int step, int lo, int hi)
             {
+                _reference = ref reference[lo];
                 int size = hi - lo;
                 _items = size / step + (size % step == 0 ? 0 : 1);
-                _reference = ref reference[lo];
+                _step = step;
+            }
+
+            public PixelSpan(void* pointer, int step, int lo, int hi)
+            {
+                _reference = ref *((TPixel*)pointer + lo);
+                int size = hi - lo;
+                _items = size / step + (size % step == 0 ? 0 : 1);
                 _step = step;
             }
 
