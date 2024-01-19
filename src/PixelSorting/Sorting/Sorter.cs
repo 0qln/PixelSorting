@@ -152,23 +152,92 @@ namespace Sorting
             _pixelCount = height * width;
         }
 
+        /// <summary>
+        /// Initialize a Sorter.
+        /// </summary>
+        /// <param name="byteDataBegin">The adress of the first byte of the image data.</param>
+        /// <param name="height">The height of the image in pixels.</param>
+        /// <param name="width">The width of the image in pixels.</param>
+        /// <param name="stride">The width of the image in bytes.</param>
+        /// <exception cref="ArgumentException"></exception>
+        public Sorter(ref TPixel byteDataBegin, int width, int height, int stride)
+        {
+            _bytesPerPixel = stride / width;
+            if (_bytesPerPixel != Marshal.SizeOf<TPixel>())
+            {
+                throw new ArgumentException("Given `stride` to `width` ratio does not match the struct size of `TPixel`.");
+            }
+            _imageStride = stride;
+            _imageHeight = height;
+            _imageWidth = width;
+            _bytes = (byte*)Unsafe.AsPointer(ref byteDataBegin);
+            _pixels = (TPixel*)Unsafe.AsPointer(ref byteDataBegin);
+            _byteCount = (ulong)height * (ulong)stride;
+            _pixelCount = height * width;
+        }
+
 
         // TODO: implement custom iterator pattern for these: 
 
         public unsafe bool NextRowPixelSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorX)
         // TODO: create a span around `_pixels` while iterating it (?)
         {
+            // Remember where we started.
+            int begin = iteratorX;
+
             // Get current lo.
-            int lo = iteratorX + y * _imageWidth;
+            int lo = y * _imageWidth;
 
             // Go to next span start.
-            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX++], threshhold) < 0)
+            // Skip until we found a pixel that exceeds the threshhold.
+            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX], threshhold) < 0)
+            {
+                iteratorX++;
+            }
+
+            // Get next span width.
+            // While the adjecend pixels exceed the threshhold, add them to the span.
+            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX], threshhold) >= 0)
+            {
+                iteratorX++;
+            }
+            
+            // If we are at the end of the row: reset iterator and return false.
+            // This will also handle the first loop if it gets to the end.
+            if (iteratorX >= _imageWidth)
+            {
+                // Reset iterator.
+                iteratorX = 0;
+                span = default;
+                return false;
+            }
+
+            // Assign span and return true.
+            int hi = lo + iteratorX;
+            span = new PixelSpan(_pixels, 1, lo + begin, hi);
+            return true;
+        }
+
+        public unsafe bool NextRowPixelSpanUseSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorX)
+        // TODO: create a span around `_pixels` while iterating it (?)
+        {
+            // Remember where we started.
+            int begin = iteratorX;
+
+            // Create a span around the pixels.
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
 
             // Get current lo.
-            lo = iteratorX + y * _imageWidth;
-            
+            int lo = y * _imageWidth;
+
+            // Go to next span start.
+            while (iteratorX < _imageWidth && comparer.Compare(pixels[lo + iteratorX], threshhold) < 0)
+            {
+                iteratorX++;
+            }
+
             // Get next span width.
-            while (iteratorX < _imageWidth && comparer.Compare(_pixels[lo + iteratorX], threshhold) > 0)
+            while (iteratorX < _imageWidth && comparer.Compare(pixels[lo + iteratorX], threshhold) >= 0)
             {
                 iteratorX++;
             }
@@ -184,14 +253,9 @@ namespace Sorting
 
             // Assign span and return true.
             int hi = lo + iteratorX;
-            span = new PixelSpan(_pixels, 1, lo, hi);
+            span = new PixelSpan(_pixels, 1, lo + begin, hi);
             return true;
         }
-
-        //public unsafe bool NextColPixelSpan(int x, IComparer<TPixel> comparer, int threshhold, out PixelSpan span)
-        //{
-
-        //}
 
 
         public unsafe PixelSpan GetRowPixelSpan(int y)
@@ -227,16 +291,21 @@ namespace Sorting
         }
 
 
-        public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)
+        public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold, bool useSpan)
         {
             switch (sortDirection)
             {
                 case SortDirection.Horizontal:
-                    for (int row = 0; row < _imageHeight-1; row++)
+                    for (int row = 0; row < _imageHeight; row++)
                     {
                         int iteratorX = 0;
-                        while (NextRowPixelSpan(row, comparer, threshhold, out PixelSpan span, ref iteratorX)) {
-                            IntrospectiveSort(span, comparer);
+                        if (useSpan)
+                        {
+                            while (NextRowPixelSpanUseSpan(row, comparer, threshhold, out PixelSpan span, ref iteratorX)) IntrospectiveSort(span, comparer);
+                        }                            
+                        else
+                        {
+                            while (NextRowPixelSpan(row, comparer, threshhold, out PixelSpan span, ref iteratorX)) IntrospectiveSort(span, comparer);
                         }
                     }
                     break;

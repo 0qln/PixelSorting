@@ -14,22 +14,29 @@ using Sorting.Pixels._32;
 using Sorting.Pixels.Comparer;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestDataGenerator;
 
 
 
+//BenchmarkRunner.Run<SortBenchmark>();
+
+//return;
+
+
 const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
-const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT.bmp";
+const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT__.bmp";
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
 var bmp = Imaging.Utils.GetBitmap(SOURCE);
 var data = Imaging.Utils.ExposeData(bmp);
+var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
 var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-
-sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Hue._24bitExplicitStruct(), new Pixel24bitExplicitStruct { B = 230, G = 230, R = 0 });
+sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold, true);
 
 bmp.Save(RESULT);
 
@@ -41,41 +48,33 @@ bmp.Save(RESULT);
 
 public class SortBenchmark
 {
-    private readonly PixelComparer.Ascending.Red._32bit _comparer = new();
+    const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
+    static BitmapData data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(SOURCE));
 
-    public IEnumerable<TestDataSize> valuesFordatasizes => Generator.GetDefaultTestingDataset();
+    static PixelComparer.Ascending.Hue._24bitExplicitStruct comparer = new();
 
-    [ParamsSource(nameof(valuesFordatasizes))]
-    public TestDataSize Datasize;
+    //[Params(true, false)]
+    //public bool UseSpan;
 
     [Benchmark]
-    public void InsertionSort()
+    public void GapsSpan()
     {
-        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
-        foreach (var test in tests)
-        {
-            Sorter<Pixel32bit>.InsertionSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
-        }
+        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.Sort(SortDirection.Horizontal, comparer, new Pixel24bitExplicitStruct { B = 100, G = 100, R = 100 }, true);
     }
 
     [Benchmark]
-    public void HeapSort()
+    public void GapsNoSpan()
     {
-        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
-        foreach (var test in tests)
-        {
-            Sorter<Pixel32bit>.HeapSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
-        }
+        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.Sort(SortDirection.Horizontal, comparer, new Pixel24bitExplicitStruct { B = 100, G = 100, R = 100 }, false);
     }
 
     [Benchmark]
-    public void IntrospectiveSort()
+    public void NoGaps()
     {
-        var tests = Generator.GenerateTestingData<Pixel32bit>([Datasize], _comparer, 420).ToList();
-        foreach (var test in tests)
-        {
-            Sorter<Pixel32bit>.IntrospectiveSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), _comparer);
-        }
+        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.Sort(SortDirection.Horizontal, comparer);
     }
 }
 
