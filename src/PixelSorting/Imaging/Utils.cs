@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Reflection;
+using TestDataGenerator;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Imaging
@@ -71,6 +72,18 @@ namespace Imaging
         {
             Rectangle rect = new (0, 0, bmp.Width, bmp.Height);
             return bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat);
+        }
+
+
+        public static void SaveResizings(string SOURCE, Func<(int, int), string> targetName)
+        {
+            Bitmap sourceBmp = GetBitmap(SOURCE);
+
+            foreach (var size in Generator.CommonImageSizesL())
+            {
+                var resizeBmp = new Bitmap(sourceBmp, new Size(size.Horizontal, size.Vertical));
+                resizeBmp.Save(targetName(size));
+            }
         }
 
 #pragma warning restore CA1416 // Validate platform compatibility

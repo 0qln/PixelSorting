@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sorting\Sorting.csproj" />
+    <ProjectReference Include="..\TestDataGenerator\TestDataGenerator.csproj" />
   </ItemGroup>
 
 </Project>

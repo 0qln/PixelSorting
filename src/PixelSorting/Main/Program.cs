@@ -22,23 +22,25 @@ using TestDataGenerator;
 
 
 
-//BenchmarkRunner.Run<SortBenchmark>();
-
-//return;
 
 
-const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
-const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT__.bmp";
+const string SOURCE = "../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
+string TARGET((int x, int y) size) => $"../../../../../SampleImages/img_0/sample-image-{size.x}x{size.y}.bmp";
+Imaging.Utils.SaveResizings(SOURCE, TARGET);
 
-#pragma warning disable CA1416 // Validate platform compatibility
+//const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
+//const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT__.bmp";
 
-var bmp = Imaging.Utils.GetBitmap(SOURCE);
-var data = Imaging.Utils.ExposeData(bmp);
-var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
-var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold, true);
+//#pragma warning disable CA1416 // Validate platform compatibility
 
-bmp.Save(RESULT);
+//var bmp = Imaging.Utils.GetBitmap(SOURCE);
+//var data = Imaging.Utils.ExposeData(bmp);
+//var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
+//var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+//sorter.Sort(SortDirection.Vertical, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold);
+//sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold);
+
+//bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
 
@@ -49,29 +51,36 @@ bmp.Save(RESULT);
 public class SortBenchmark
 {
     const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
-    static BitmapData data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(SOURCE));
 
-    static PixelComparer.Ascending.Hue._24bitExplicitStruct comparer = new();
 
-    //[Params(true, false)]
-    //public bool UseSpan;
+    public SortBenchmark()
+    {
+        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(SOURCE));
+        comparer = new();
+        threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
+    }
+
+    public BitmapData data;
+    PixelComparer.Ascending.Red._24bitExplicitStruct comparer;
+    static Pixel24bitExplicitStruct threshhold;
+
 
     [Benchmark]
-    public void GapsSpan()
+    public void ThreshholdWithSpan()
     {
         var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-        sorter.Sort(SortDirection.Horizontal, comparer, new Pixel24bitExplicitStruct { B = 100, G = 100, R = 100 }, true);
+        //sorter.Sort(SortDirection.Horizontal, comparer, threshhold, true);
     }
 
     [Benchmark]
-    public void GapsNoSpan()
+    public void ThreshholdWithoutSpan()
     {
         var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-        sorter.Sort(SortDirection.Horizontal, comparer, new Pixel24bitExplicitStruct { B = 100, G = 100, R = 100 }, false);
+        //sorter.Sort(SortDirection.Horizontal, comparer, threshhold, false);
     }
 
     [Benchmark]
-    public void NoGaps()
+    public void NoThreshhold()
     {
         var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
         sorter.Sort(SortDirection.Horizontal, comparer);
