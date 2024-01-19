@@ -25,22 +25,18 @@ using TestDataGenerator;
 
 
 const string SOURCE = "../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
-string TARGET((int x, int y) size) => $"../../../../../SampleImages/img_0/sample-image-{size.x}x{size.y}.bmp";
-Imaging.Utils.SaveResizings(SOURCE, TARGET);
+const string RESULT = "../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
 
-//const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
-//const string RESULT = "../../../../../SampleImages/sample-image (1080p Full HD)__RESULT__.bmp";
+#pragma warning disable CA1416 // Validate platform compatibility
 
-//#pragma warning disable CA1416 // Validate platform compatibility
-
-//var bmp = Imaging.Utils.GetBitmap(SOURCE);
-//var data = Imaging.Utils.ExposeData(bmp);
-//var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
-//var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-//sorter.Sort(SortDirection.Vertical, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold);
+var bmp = Imaging.Utils.GetBitmap(SOURCE);
+var data = Imaging.Utils.ExposeData(bmp);
+var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
+var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bitExplicitStruct(), threshhold);
 //sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold);
 
-//bmp.Save(RESULT);
+bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
 

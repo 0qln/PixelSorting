@@ -22,6 +22,11 @@ namespace Sorting.Pixels._32
         [FieldOffset(2)] public byte R;
         [FieldOffset(3)] public byte A;
         
+        public int GrayScale()
+        {
+            return (R + G + B) / 3;
+        }
+
         /// <summary>
         /// Calculate the hue of this pixel.
         /// </summary>

@@ -121,7 +121,9 @@ namespace Sorting.Pixels.Comparer
                 {
                     public int Compare(Pixel32bitUnion a, Pixel32bitUnion b) 
                     {
+                        // `result` is a valid comparison in floating point notation.
                         float result = a.GetHue() - b.GetHue();
+                        // In order to cast to int, without data loss, scale and round the flaot.
                         return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
                     }
                 }
@@ -133,6 +135,30 @@ namespace Sorting.Pixels.Comparer
                     {
                         float result = a.GetHue() - b.GetHue();
                         return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
+                    }
+                }
+            }
+
+            /// <summary> Sort according to the avg brightness value. </summary>
+            public abstract class GrayScale
+            {
+                /// <summary> 32 bit pixel format. </summary>
+                public class _32bitUnion : IComparer<Pixel32bitUnion>
+                {
+                    public int Compare(Pixel32bitUnion a, Pixel32bitUnion b)
+                    {
+                        // return a.GrayScale() - b.GrayScale();
+                        // We can safe the divisions by inlining the grayscale function.
+                        return (a.R + a.G + a.B) - (b.R + b.G + b.B);
+                    }
+                }
+
+                /// <summary> 24 bit pixel format. </summary>
+                public class _24bitExplicitStruct : IComparer<Pixel24bitExplicitStruct>
+                {
+                    public int Compare(Pixel24bitExplicitStruct a, Pixel24bitExplicitStruct b)
+                    {
+                        return (a.R + a.G + a.B) - (b.R + b.G + b.B);
                     }
                 }
             }
@@ -154,6 +180,12 @@ namespace Sorting.Pixels.Comparer
                 public class _24bit : IComparer<Pixel24bitStruct>
                 {
                     public int Compare(Pixel24bitStruct a, Pixel24bitStruct b) => b.R - a.R;
+                }
+
+                /// <summary> 24 bit pixel format. </summary>
+                public class _24bitExplicitStruct : IComparer<Pixel24bitExplicitStruct>
+                {
+                    public int Compare(Pixel24bitExplicitStruct a, Pixel24bitExplicitStruct b) => b.R - a.R;
                 }
 
                 /// <summary> 24 bit pixel format. </summary>
