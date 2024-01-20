@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
+using static Utils.Utils;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sorting
@@ -209,7 +210,7 @@ namespace Sorting
 
             // Assign span and return true.
             int hi = lo + iteratorX;
-            span = new PixelSpan(_pixels, 1, lo + begin, hi);
+            span = new PixelSpan(pixels, 1, lo + begin, hi);
             return true;
         }
 
@@ -240,7 +241,7 @@ namespace Sorting
             }
 
             // Assign span and return true.
-            span = new PixelSpan(_pixels, _imageWidth, x + begin, x + iteratorY);
+            span = new PixelSpan(pixels, _imageWidth, x + begin, x + iteratorY);
             return true;
         }
 
@@ -277,6 +278,51 @@ namespace Sorting
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="angle">0 ~= Horizontal; 90 ~= Vertical</param>
+        /// <param name="comparer"></param>
+        public void Sort(double angle, IComparer<TPixel> comparer)
+        {
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+
+            double angleNorm = (double)angle / 90.0d;
+
+            if (angleNorm != 0.5) throw new NotImplementedException();
+
+            // 45 \deg
+            int rtriBegin = _imageWidth - _imageHeight;
+            int step = _imageWidth + 1, lo, hi;
+
+            // mid par
+            for (int i = 0; i < rtriBegin; i++)
+            {
+                lo = i;
+                hi = _pixelCount;
+                PixelSpan span = new(pixels, step, lo, hi);
+                IntrospectiveSort(span, comparer);
+            }
+
+            for (int i = 0; i < _imageHeight; i++)
+            {
+                // right tri
+                {
+                    lo = i + rtriBegin;
+                    hi = _pixelCount - (i * _imageWidth + _imageWidth);
+                    PixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+
+                // left tri 
+                {
+                    lo = i * _imageWidth;
+                    hi = _pixelCount;
+                    PixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+            }
+        }
 
         public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)
         {
@@ -354,6 +400,14 @@ namespace Sorting
 
 
             public PixelSpan(TPixel[] reference, int step, int lo, int hi)
+            {
+                _reference = ref reference[lo];
+                int size = hi - lo;
+                _items = size / step + (size % step == 0 ? 0 : 1);
+                _step = step;
+            }
+
+            public PixelSpan(Span<TPixel> reference, int step, int lo, int hi)
             {
                 _reference = ref reference[lo];
                 int size = hi - lo;

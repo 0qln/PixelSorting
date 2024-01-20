@@ -23,5 +23,10 @@
         {
             return -1;
         }
+
+        public static double Lerp(int start, int end, double amount)
+        {
+            return start + (end - start) * amount;
+        }
     }
 }
