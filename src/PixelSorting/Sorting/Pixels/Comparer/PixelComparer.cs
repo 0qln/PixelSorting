@@ -1,5 +1,6 @@
 ﻿using Sorting.Pixels._24;
 using Sorting.Pixels._32;
+using Sorting.Pixels._8;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -159,6 +160,14 @@ namespace Sorting.Pixels.Comparer
                     public int Compare(Pixel24bitExplicitStruct a, Pixel24bitExplicitStruct b)
                     {
                         return (a.R + a.G + a.B) - (b.R + b.G + b.B);
+                    }
+                }
+
+                public class _8bit : IComparer<Pixel8bit>
+                {
+                    public int Compare(Pixel8bit a, Pixel8bit b)
+                    {
+                        return a.Value - b.Value;
                     }
                 }
             }

@@ -11,6 +11,7 @@ using Microsoft.Diagnostics.Runtime.Utilities;
 using Sorting;
 using Sorting.Pixels._24;
 using Sorting.Pixels._32;
+using Sorting.Pixels._8;
 using Sorting.Pixels.Comparer;
 using System.Diagnostics;
 using System.Drawing;
@@ -24,18 +25,15 @@ using TestDataGenerator;
 
 
 
-const string SOURCE = "../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
-const string RESULT = "../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
+const string SOURCE = @"../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
+const string RESULT = @"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
 var bmp = Imaging.Utils.GetBitmap(SOURCE);
 var data = Imaging.Utils.ExposeData(bmp);
-var threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
 var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-sorter.Sort(SortDirection.Vertical, new PixelComparer.Descending.Red._24bitExplicitStruct(), threshhold);
-//sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._24bitExplicitStruct(), threshhold);
-
+sorter.Sort(SortDirection.Vertical, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
 bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
