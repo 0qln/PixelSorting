@@ -283,11 +283,7 @@ namespace Sorting
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        ///// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
-        /// <param name="comparer"></param>
+
         public void SortCornerTriangleLeftBottom(int length, IComparer<TPixel> comparer)
         {
             Debug.Assert(length <= _imageWidth);
@@ -312,11 +308,7 @@ namespace Sorting
             }            
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        ///// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
-        /// <param name="comparer"></param>
+
         public void SortCornerTriangleRightBottom(int length, IComparer<TPixel> comparer)
         {
             Debug.Assert(length <= _imageWidth);
@@ -338,6 +330,27 @@ namespace Sorting
                     FloatingPixelSpan span = new(pixels, step, lo + off, hi + off);
                     IntrospectiveSort(span, comparer);
                 }
+            }
+        }
+
+        public void SortCornerTriangleRightTop(int length, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(length <= _imageWidth);
+            Debug.Assert(length > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = length / (double)_imageHeight;
+            int begin = _imageWidth - length;
+            
+            for (int i = 0; i < length; i++)
+            {
+                IntrospectiveSort(new FloatingPixelSpan(pixels, 
+
+                    (double)(_imageWidth + slope), 
+                    (int)(i + begin), 
+                    (int)(_pixelCount - i * _imageWidth / slope)
+                    
+                ), comparer);
             }
         }
 
