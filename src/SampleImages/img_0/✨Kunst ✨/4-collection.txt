@@ -1,0 +1,20 @@
+
+for (double angle = 2.0; angle <= 4.0; angle += 0.1)
+{
+    string angleStr = angle.ToString();
+    if (angleStr.Length < 3) angleStr += ".0";
+    angleStr = angleStr.Substring(0, 3);
+
+    string SOURCE = $"../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
+    string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{angleStr}.bmp";
+
+    #pragma warning disable CA1416 // Validate platform compatibility
+
+    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+    var data = Imaging.Utils.ExposeData(bmp);
+    var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+    sorter.Sort(Math.PI / angle, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
+    bmp.Save(RESULT);
+
+    #pragma warning restore CA1416 // Validate platform compatibility
+}

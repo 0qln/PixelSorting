@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Utils.Utils;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics;
 
 namespace Sorting
 {
@@ -128,6 +129,8 @@ namespace Sorting
         private readonly int _pixelCount;
         private readonly TPixel* _pixels;
 
+        private readonly double GAMMA;
+
 
         /// <summary>
         /// Initialize a Sorter.
@@ -151,6 +154,8 @@ namespace Sorting
             _pixels = (TPixel*)byteDataBegin;
             _byteCount = (ulong)height * (ulong)stride;
             _pixelCount = height * width;
+
+            GAMMA = 1.0 / Math.Tan(width / height);
         }
 
         /// <summary>
@@ -281,47 +286,103 @@ namespace Sorting
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="angle">0 ~= Horizontal; 90 ~= Vertical</param>
+        ///// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
         /// <param name="comparer"></param>
-        public void Sort(double angle, IComparer<TPixel> comparer)
+        public void SortCornerTriangleLeftBottom(int length, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(length <= _imageWidth);
+            Debug.Assert(length > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = length / (double)_imageHeight;
+            double step = _imageWidth + slope;
+
+            Console.WriteLine(slope);
+            Console.WriteLine(step);
+
+            for (int off = 0; off < slope; off++)
+            {
+                for (int y = 0; y < Math.Max(length, _imageHeight); y++)
+                {
+                    int lo = Math.Min(y * _imageWidth, _pixelCount - _imageWidth + 1);
+                    int hi = _pixelCount;
+                    FloatingPixelSpan span = new(pixels, step, lo + off, hi + off);
+                    IntrospectiveSort(span, comparer);
+                }
+            }            
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="alpha">Angle In Radians. [ 0 ; PI ] </param>
+        /// <param name="comparer"></param>
+        public void Sort(double alpha, IComparer<TPixel> comparer)
         {
             Span<TPixel> pixels = new(_pixels, _pixelCount);
 
-            double angleNorm = (double)angle / 90.0d;
+            // Inverse of alpha
+            double beta = Math.Abs(Math.PI / 2 - alpha);
 
-            if (angleNorm != 0.5) throw new NotImplementedException();
+            // Triangle base size
+            int tBaseLen;
+            if (alpha == 0 || alpha == Math.PI) // tan(beta) -> \inf
+            {
+                tBaseLen = 0;
+            }
+            else
+            {
+                tBaseLen = (int)(Math.Tan(beta) * _imageHeight);
+            }
 
-            // 45 \deg
-            int rtriBegin = _imageWidth - _imageHeight;
-            int step = _imageWidth + 1, lo, hi;
+            // The amount of steps to take to get to the new pixel
+            double step;
+            if (alpha == Math.PI / 2) // tan(alpha) -> \inf
+            {
+                step = 1;
+            }
+            else
+            {
+                step = _imageWidth + Math.Tan(alpha);
+            }
+            step = Math.Min(step, _imageWidth);
 
-            // mid par
-            for (int i = 0; i < rtriBegin; i++)
+            Console.WriteLine(alpha);
+            Console.WriteLine(beta);
+            Console.WriteLine(tBaseLen);
+            Console.WriteLine(step);
+
+            int lo, hi, i;
+
+            // Middle parallelogram
+            for (i = 0; i < _imageWidth - tBaseLen; i++)
             {
                 lo = i;
                 hi = _pixelCount;
-                PixelSpan span = new(pixels, step, lo, hi);
+                FloatingPixelSpan span = new(pixels, step, lo, hi);
                 IntrospectiveSort(span, comparer);
             }
 
-            for (int i = 0; i < _imageHeight; i++)
+            // Triangles on the sides
+            for (i = 0; i < tBaseLen; i++)
             {
-                // right tri
+                // Right hand triangle
                 {
-                    lo = i + rtriBegin;
+                    lo = i + (_imageWidth - tBaseLen);
                     hi = _pixelCount - (i * _imageWidth + _imageWidth);
-                    PixelSpan span = new(pixels, step, lo, hi);
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
                     IntrospectiveSort(span, comparer);
                 }
 
-                // left tri 
+                // Left hand triangle
                 {
                     lo = i * _imageWidth;
                     hi = _pixelCount;
-                    PixelSpan span = new(pixels, step, lo, hi);
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
                     IntrospectiveSort(span, comparer);
                 }
             }
+            
         }
 
         public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)
@@ -441,6 +502,66 @@ namespace Sorting
             }
 
             public int Step
+            {
+                get => _step;
+            }
+        }
+
+        /// <summary>
+        /// Custom `Span<typeparamref name="TPixel"/>` implementation.
+        /// </summary>
+        /// <typeparam name="TPixel"></typeparam>
+        public readonly ref struct FloatingPixelSpan
+        {
+            /// <summary>A byref or a native ptr.</summary>
+            internal readonly ref TPixel _reference;
+            /// <summary>The number of elements this Span operates on.</summary>
+            private readonly int _items;
+            /// <summary>The number that controls how many where the next elmenet is when indexing.</summary>
+            private readonly double _step;
+
+
+            public FloatingPixelSpan(TPixel[] reference, double step, int lo, int hi)
+            {
+                _reference = ref reference[lo];
+                int size = hi - lo;
+                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
+                _step = step;
+            }
+
+            public FloatingPixelSpan(Span<TPixel> reference, double step, int lo, int hi)
+            {
+                _reference = ref reference[lo];
+                int size = hi - lo;
+                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
+                _step = step;
+            }
+
+            public FloatingPixelSpan(void* pointer, double step, int lo, int hi)
+            {
+                _reference = ref *((TPixel*)pointer + lo);
+                int size = hi - lo;
+                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
+                _step = step;
+            }
+
+            public ref TPixel this[int index]
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    if ((uint)index >= (uint)_items) 
+                        throw new IndexOutOfRangeException();
+                    return ref Unsafe.Add(ref _reference, (nint)(uint)(index * _step));
+                }
+            }
+
+            public int ItemCount
+            {
+                get => _items;
+            }
+
+            public double Step
             {
                 get => _step;
             }

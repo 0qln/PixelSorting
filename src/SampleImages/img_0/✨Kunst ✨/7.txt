@@ -1,0 +1,42 @@
+    sorter.SortCornerTriangleLeftBottom(3000, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
+
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        ///// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
+        /// <param name="comparer"></param>
+        public void SortCornerTriangleLeftBottom(int length, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(length <= _imageWidth);
+            Debug.Assert(length > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double beta = (double)length / (double)_imageHeight;
+            double step = _imageWidth + beta;
+
+            Console.WriteLine(beta);
+            Console.WriteLine(step);
+
+            if (length > _imageHeight)
+            {
+                for (int y = 0; y < length; y++)
+                {
+                    int lo = y * _imageHeight;
+                    int hi = _pixelCount - length - y;
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+            }
+            else
+            {
+                for (int y = 0; y < _imageHeight; y++)
+                {
+                    int lo = y * _imageWidth;
+                    int hi = _pixelCount;
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+            }
+        }

@@ -1,0 +1,60 @@
+sorter.Sort(Math.PI / 3.5, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="alpha">Angle In Radians</param>
+        /// <param name="comparer"></param>
+        public void Sort(double alpha, IComparer<TPixel> comparer)
+        {
+            // Inverse of alpha
+            double beta = Math.PI / 2 - alpha;
+
+            // Triangle base size
+            int a = (int)(Math.Tan(beta) * _imageHeight);
+
+            // The amount of steps to take to get to the new pixel
+            double step = _imageWidth + Math.Tan(alpha);
+
+
+            Console.WriteLine(beta);
+            Console.WriteLine(alpha);
+            Console.WriteLine(a);
+            Console.WriteLine(step);
+
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+
+            int lo, hi, i;
+
+            // Middle parallelogram
+            for (i = 0; i < _imageWidth - a; i++)
+            {
+                lo = i;
+                hi = _pixelCount;
+                FloatingPixelSpan span = new(pixels, step, lo, hi);
+                IntrospectiveSort(span, comparer);
+            }
+
+            // Triangles on the sides
+            for (i = 0; i < a; i++)
+            {
+                // Right hand triangle
+                {
+                    lo = i + (_imageWidth - a);
+                    hi = _pixelCount - (i * _imageWidth + _imageWidth);
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+
+                // Left hand triangle
+                {
+                    lo = i * _imageWidth;
+                    hi = _pixelCount;
+                    FloatingPixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+            }
+            
+        }

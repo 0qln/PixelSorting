@@ -23,20 +23,27 @@ using TestDataGenerator;
 
 
 
-
-
-const string SOURCE = @"../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
-const string RESULT = @"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
+//for (double alpha = 0.0; alpha <= Math.PI; alpha += 0.1)
+for (int x = 500; x <= 3500; x += 500)
+    //int x = 3840;
+{
+    string str = x.ToString();
+    //str = (str.Length < 3 ? str + ".0" : str)[..3];
+    str = x.ToString();
+    string SOURCE = $"../../../../../SampleImages/img_0/sample-image-SOURCE.bmp";
+    string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp";
+    //string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-var bmp = Imaging.Utils.GetBitmap(SOURCE);
-var data = Imaging.Utils.ExposeData(bmp);
-var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-sorter.Sort(1.0, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
-bmp.Save(RESULT);
+    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+    var data = Imaging.Utils.ExposeData(bmp);
+    var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+    sorter.SortCornerTriangleLeftBottom(x, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
+    bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
+}
 
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();

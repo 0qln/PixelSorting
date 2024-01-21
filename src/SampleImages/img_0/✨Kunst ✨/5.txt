@@ -1,0 +1,33 @@
+double alpha = Math.PI / 8;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
+        /// <param name="comparer"></param>
+        public void SortRightHandTriangle(double alpha, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(alpha > 0);
+            Debug.Assert(alpha <= Math.PI / 2); // Theoretical limit
+            Debug.Assert(alpha <= GAMMA); // Practical limit
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            int lo, hi;
+
+            // The amount of steps to take to get to the new pixel
+            double step = _imageWidth + Math.Tan(alpha);
+
+            // Inverse of alpha
+            double beta = Math.Abs(Math.PI / 2 - alpha);
+
+            // Triangle base size
+            int tBaseLen = (int)(Math.Tan(beta) * _imageHeight);
+
+            for (int i = 0; i < tBaseLen; i++)
+            {
+                lo = i;
+                hi = _pixelCount - (i * _imageWidth + _imageWidth);
+                FloatingPixelSpan span = new(pixels, step, lo, hi);
+                IntrospectiveSort(span, comparer);
+            }
+        }

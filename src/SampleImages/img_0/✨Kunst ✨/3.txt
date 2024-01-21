@@ -1,0 +1,48 @@
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="angle">0 ~= Horizontal; 90 ~= Vertical</param>
+        /// <param name="comparer"></param>
+        public void Sort(double angle, IComparer<TPixel> comparer)
+        {
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+
+            double angleNorm = (double)angle / 90.0d;
+
+            if (angleNorm != 0.5) throw new NotImplementedException();
+
+            // 90 \deg
+            {
+                int rtriBegin = _imageWidth - _imageHeight;
+                int step = _imageWidth, lo, hi;
+
+                // mid par
+                for (int i = 0; i < rtriBegin; i++)
+                {
+                    lo = i;
+                    hi = _pixelCount;
+                    PixelSpan span = new(pixels, step, lo, hi);
+                    IntrospectiveSort(span, comparer);
+                }
+
+                for (int i = 0; i < _imageHeight; i++)
+                {
+                    // right tri
+                    {
+                        lo = i + rtriBegin;
+                        hi = _pixelCount - (i * _imageWidth + _imageWidth);
+                        PixelSpan span = new(pixels, step, lo, hi);
+                        IntrospectiveSort(span, comparer);
+                    }
+
+                    // left tri 
+                    {
+                        lo = i * _imageWidth;
+                        hi = _pixelCount;
+                        PixelSpan span = new(pixels, step, lo, hi);
+                        IntrospectiveSort(span, comparer);
+                    }
+                }
+            }
+        }
