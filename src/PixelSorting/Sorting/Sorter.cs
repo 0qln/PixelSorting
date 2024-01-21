@@ -316,19 +316,16 @@ namespace Sorting
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = length / (double)_imageHeight;
-            double step = _imageWidth - slope;
-
-            Console.WriteLine(slope);
-            Console.WriteLine(step);
 
             for (int off = 0; off < slope; off++)
             {
-                for (int y = 0; y < Math.Max(length, _imageHeight); y++)
+                for (int i = 0; i < Math.Max(length, _imageHeight); i++)
                 {
-                    int lo = Math.Min(y * _imageWidth + _imageWidth - 1, _pixelCount - _imageWidth);
-                    int hi = _pixelCount;
-                    FloatingPixelSpan span = new(pixels, step, lo + off, hi + off);
-                    IntrospectiveSort(span, comparer);
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        (double)(_imageWidth - slope),
+                        (int)(Math.Min(i * _imageWidth + _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
+                        (int)(_pixelCount)),
+                    comparer);
                 }
             }
         }
@@ -345,11 +342,9 @@ namespace Sorting
             for (int i = 0; i < length; i++)
             {
                 IntrospectiveSort(new FloatingPixelSpan(pixels, 
-
                     (double)(_imageWidth + slope), 
                     (int)(i + begin), 
                     (int)(_pixelCount - i * _imageWidth / slope)
-                    
                 ), comparer);
             }
         }
@@ -365,11 +360,9 @@ namespace Sorting
             for (int i = 0; i < length; i++)
             {
                 IntrospectiveSort(new FloatingPixelSpan(pixels,
-
                     (double)(_imageWidth - slope),
                     (int)(i),
                     (int)(_pixelCount - (length - i) * _imageWidth / slope)
-
                 ), comparer);
             }
         }
@@ -381,70 +374,69 @@ namespace Sorting
         /// <param name="comparer"></param>
         public void Sort(double alpha, IComparer<TPixel> comparer)
         {
+            Debug.Assert(alpha > 0);
+            Debug.Assert(alpha < double.Pi);
+
             Span<TPixel> pixels = new(_pixels, _pixelCount);
 
-            // Inverse of alpha
-            double beta = Math.Abs(Math.PI / 2 - alpha);
+            // Base length of an edge triangle
+            int length = (int)(_imageHeight * Math.Tan(double.Pi / 2 - alpha));
 
-            // Triangle base size
-            int tBaseLen;
-            if (alpha == 0 || alpha == Math.PI) // tan(beta) -> \inf
-            {
-                tBaseLen = 0;
-            }
-            else
-            {
-                tBaseLen = (int)(Math.Tan(beta) * _imageHeight);
-            }
 
-            // The amount of steps to take to get to the new pixel
-            double step;
-            if (alpha == Math.PI / 2) // tan(alpha) -> \inf
-            {
-                step = 1;
-            }
-            else
-            {
-                step = _imageWidth + Math.Tan(alpha);
-            }
-            step = Math.Min(step, _imageWidth);
+            // slope of the hypotenuse of an edge triangle
+            double slope = length / (double)_imageHeight;
 
+            Console.WriteLine();
             Console.WriteLine(alpha);
-            Console.WriteLine(beta);
-            Console.WriteLine(tBaseLen);
-            Console.WriteLine(step);
+            Console.WriteLine(length);
+            Console.WriteLine(slope);
 
-            int lo, hi, i;
-
-            // Middle parallelogram
-            for (i = 0; i < _imageWidth - tBaseLen; i++)
+            if (length > _imageWidth)
             {
-                lo = i;
-                hi = _pixelCount;
-                FloatingPixelSpan span = new(pixels, step, lo, hi);
-                IntrospectiveSort(span, comparer);
+                Console.WriteLine("Not implemented");
+                return;
             }
 
-            // Triangles on the sides
-            for (i = 0; i < tBaseLen; i++)
+            if (length < -_imageWidth)
             {
-                // Right hand triangle
-                {
-                    lo = i + (_imageWidth - tBaseLen);
-                    hi = _pixelCount - (i * _imageWidth + _imageWidth);
-                    FloatingPixelSpan span = new(pixels, step, lo, hi);
-                    IntrospectiveSort(span, comparer);
-                }
+                Console.WriteLine("Not implemented");
+                return;
+            }
 
-                // Left hand triangle
+            if (length > 0)
+            {
+                SortCornerTriangleLeftBottom(length, comparer);
+                SortCornerTriangleRightTop(length, comparer);
+
+                // Middle parallelogram
+                for (int i = 0; i < _imageWidth - length; i++)
                 {
-                    lo = i * _imageWidth;
-                    hi = _pixelCount;
-                    FloatingPixelSpan span = new(pixels, step, lo, hi);
-                    IntrospectiveSort(span, comparer);
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        _imageWidth + slope,
+                        i,
+                        _pixelCount),
+                    comparer);
                 }
             }
             
+            if (length < 0)
+            {
+                length = -length;
+
+                SortCornerTriangleLeftTop(length, comparer);
+                SortCornerTriangleRightBottom(length, comparer);
+
+                // Middle parallelogram
+                for (int i = length; i < _imageWidth; i++)
+                {
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        _imageWidth + slope,
+                        i,
+                        _pixelCount),
+                    comparer);
+                }
+            }
+
         }
 
         public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)

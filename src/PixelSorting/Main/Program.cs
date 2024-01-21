@@ -23,13 +23,11 @@ using TestDataGenerator;
 
 
 
-//for (double alpha = 0.0; alpha <= Math.PI; alpha += 0.1)
-for (int x = 100; x <= 800; x += 100)
-    //int x = 3840;
+for (double x = 0.1; x < Math.PI; x += 0.1)
+    //for (int x = 100; x <= 800; x += 100)
 {
     string str = x.ToString();
-    //str = (str.Length < 3 ? str + ".0" : str)[..3];
-    str = x.ToString();
+    str = (str.Length < 3 ? str + ".0" : str)[..3];
     string SOURCE = $"../../../../../SampleImages/img_0/sample-image-854x480.bmp";
     string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp";
     //string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
@@ -39,7 +37,7 @@ for (int x = 100; x <= 800; x += 100)
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortCornerTriangleLeftTop(x, new PixelComparer.Ascending.GrayScale._32bitUnion());
+    sorter.Sort(x, new PixelComparer.Ascending.GrayScale._32bitUnion());
     bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
