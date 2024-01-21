@@ -315,6 +315,35 @@ namespace Sorting
         /// <summary>
         /// 
         /// </summary>
+        ///// <param name="alpha">Angle in radians. [ 0; PI/2 ]</param>
+        /// <param name="comparer"></param>
+        public void SortCornerTriangleRightBottom(int length, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(length <= _imageWidth);
+            Debug.Assert(length > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = length / (double)_imageHeight;
+            double step = _imageWidth - slope;
+
+            Console.WriteLine(slope);
+            Console.WriteLine(step);
+
+            for (int off = 0; off < slope; off++)
+            {
+                for (int y = 0; y < Math.Max(length, _imageHeight); y++)
+                {
+                    int lo = Math.Min(y * _imageWidth + _imageWidth - 1, _pixelCount - _imageWidth);
+                    int hi = _pixelCount;
+                    FloatingPixelSpan span = new(pixels, step, lo + off, hi + off);
+                    IntrospectiveSort(span, comparer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="alpha">Angle In Radians. [ 0 ; PI ] </param>
         /// <param name="comparer"></param>
         public void Sort(double alpha, IComparer<TPixel> comparer)

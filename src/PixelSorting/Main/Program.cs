@@ -39,7 +39,7 @@ for (int x = 500; x <= 3500; x += 500)
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortCornerTriangleLeftBottom(x, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
+    sorter.SortCornerTriangleRightBottom(x, new PixelComparer.Ascending.GrayScale._24bitExplicitStruct());
     bmp.Save(RESULT);
 
 #pragma warning restore CA1416 // Validate platform compatibility
