@@ -354,6 +354,26 @@ namespace Sorting
             }
         }
 
+        public void SortCornerTriangleLeftTop(int length, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(length <= _imageWidth);
+            Debug.Assert(length > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = length / (double)_imageHeight;
+
+            for (int i = 0; i < length; i++)
+            {
+                IntrospectiveSort(new FloatingPixelSpan(pixels,
+
+                    (double)(_imageWidth - slope),
+                    (int)(i),
+                    (int)(_pixelCount - (length - i) * _imageWidth / slope)
+
+                ), comparer);
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
