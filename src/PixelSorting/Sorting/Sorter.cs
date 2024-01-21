@@ -291,19 +291,19 @@ namespace Sorting
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = length / (double)_imageHeight;
-            double step = _imageWidth + slope;
 
             Console.WriteLine(slope);
-            Console.WriteLine(step);
+            Console.WriteLine((double)(_imageWidth + slope));
 
             for (int off = 0; off < slope; off++)
             {
-                for (int y = 0; y < Math.Max(length, _imageHeight); y++)
+                for (int i = 0; i < Math.Max(length, _imageHeight); i++)
                 {
-                    int lo = Math.Min(y * _imageWidth, _pixelCount - _imageWidth + 1);
-                    int hi = _pixelCount;
-                    FloatingPixelSpan span = new(pixels, step, lo + off, hi + off);
-                    IntrospectiveSort(span, comparer);
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        (double)(_imageWidth + slope), 
+                        (int)(Math.Min(i * _imageWidth, _pixelCount - _imageWidth) + off),
+                        (int)(_pixelCount)),
+                    comparer);
                 }
             }            
         }
@@ -343,8 +343,8 @@ namespace Sorting
             {
                 IntrospectiveSort(new FloatingPixelSpan(pixels, 
                     (double)(_imageWidth + slope), 
-                    (int)(i + begin), 
-                    (int)(_pixelCount - i * _imageWidth / slope)
+                    (int)(begin + i), 
+                    (int)(_pixelCount - i * _imageWidth / slope + _imageWidth - 1)
                 ), comparer);
             }
         }
@@ -393,13 +393,13 @@ namespace Sorting
 
             if (length > _imageWidth)
             {
-                Console.WriteLine("Not implemented");
+                Console.WriteLine("length > _imageWidth Not implemented");
                 return;
             }
 
             if (length < -_imageWidth)
             {
-                Console.WriteLine("Not implemented");
+                Console.WriteLine("length < -_imageWidth Not implemented");
                 return;
             }
 
