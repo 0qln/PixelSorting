@@ -284,20 +284,17 @@ namespace Sorting
         }
 
 
-        public void SortCornerTriangleLeftBottom(int length, IComparer<TPixel> comparer)
+        public void SortCornerTriangleLeftBottomW(int width, IComparer<TPixel> comparer)
         {
-            Debug.Assert(length <= _imageWidth);
-            Debug.Assert(length > 0);
+            Debug.Assert(width <= _imageWidth);
+            Debug.Assert(width > 0);
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = length / (double)_imageHeight;
-
-            Console.WriteLine(slope);
-            Console.WriteLine((double)(_imageWidth + slope));
+            double slope = width / (double)_imageHeight;
 
             for (int off = 0; off < slope; off++)
             {
-                for (int i = 0; i < Math.Max(length, _imageHeight); i++)
+                for (int i = 0; i < Math.Max(width, _imageHeight); i++)
                 {
                     IntrospectiveSort(new FloatingPixelSpan(pixels,
                         (double)(_imageWidth + slope), 
@@ -309,17 +306,17 @@ namespace Sorting
         }
 
 
-        public void SortCornerTriangleRightBottom(int length, IComparer<TPixel> comparer)
+        public void SortCornerTriangleRightBottomW(int width, IComparer<TPixel> comparer)
         {
-            Debug.Assert(length <= _imageWidth);
-            Debug.Assert(length > 0);
+            Debug.Assert(width <= _imageWidth);
+            Debug.Assert(width > 0);
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = length / (double)_imageHeight;
+            double slope = width / (double)_imageHeight;
 
             for (int off = 0; off < slope; off++)
             {
-                for (int i = 0; i < Math.Max(length, _imageHeight); i++)
+                for (int i = 0; i < Math.Max(width, _imageHeight); i++)
                 {
                     IntrospectiveSort(new FloatingPixelSpan(pixels,
                         (double)(_imageWidth - slope),
@@ -330,16 +327,16 @@ namespace Sorting
             }
         }
 
-        public void SortCornerTriangleRightTop(int length, IComparer<TPixel> comparer)
+        public void SortCornerTriangleRightTopW(int width, IComparer<TPixel> comparer)
         {
-            Debug.Assert(length <= _imageWidth);
-            Debug.Assert(length > 0);
+            Debug.Assert(width <= _imageWidth);
+            Debug.Assert(width > 0);
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = length / (double)_imageHeight;
-            int begin = _imageWidth - length;
+            double slope = width / (double)_imageHeight;
+            int begin = _imageWidth - width;
             
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < width; i++)
             {
                 IntrospectiveSort(new FloatingPixelSpan(pixels, 
                     (double)(_imageWidth + slope), 
@@ -349,20 +346,20 @@ namespace Sorting
             }
         }
 
-        public void SortCornerTriangleLeftTop(int length, IComparer<TPixel> comparer)
+        public void SortCornerTriangleLeftTopW(int width, IComparer<TPixel> comparer)
         {
-            Debug.Assert(length <= _imageWidth);
-            Debug.Assert(length > 0);
+            Debug.Assert(width <= _imageWidth);
+            Debug.Assert(width > 0);
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = length / (double)_imageHeight;
+            double slope = width / (double)_imageHeight;
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < width; i++)
             {
                 IntrospectiveSort(new FloatingPixelSpan(pixels,
                     (double)(_imageWidth - slope),
                     (int)(i),
-                    (int)(_pixelCount - (length - i) * _imageWidth / slope)
+                    (int)(_pixelCount - (width - i) * _imageWidth / slope)
                 ), comparer);
             }
         }
@@ -393,8 +390,7 @@ namespace Sorting
 
             if (length > _imageWidth)
             {
-                Console.WriteLine("length > _imageWidth Not implemented");
-                return;
+
             }
 
             if (length < -_imageWidth)
@@ -405,8 +401,8 @@ namespace Sorting
 
             if (length > 0)
             {
-                SortCornerTriangleLeftBottom(length, comparer);
-                SortCornerTriangleRightTop(length, comparer);
+                SortCornerTriangleLeftBottomW(length, comparer);
+                SortCornerTriangleRightTopW(length, comparer);
 
                 // Middle parallelogram
                 for (int i = 0; i < _imageWidth - length; i++)
@@ -423,8 +419,8 @@ namespace Sorting
             {
                 length = -length;
 
-                SortCornerTriangleLeftTop(length, comparer);
-                SortCornerTriangleRightBottom(length, comparer);
+                SortCornerTriangleLeftTopW(length, comparer);
+                SortCornerTriangleRightBottomW(length, comparer);
 
                 // Middle parallelogram
                 for (int i = length; i < _imageWidth; i++)
@@ -499,127 +495,7 @@ namespace Sorting
             return result;
         }
 
-
-        /// <summary>
-        /// Custom `Span<typeparamref name="TPixel"/>` implementation.
-        /// </summary>
-        /// <typeparam name="TPixel"></typeparam>
-        public readonly ref struct PixelSpan
-        {
-            /// <summary>A byref or a native ptr.</summary>
-            internal readonly ref TPixel _reference;
-            /// <summary>The number of elements this Span operates on.</summary>
-            private readonly int _items;
-            /// <summary>The number that controls how many where the next elmenet is when indexing.</summary>
-            private readonly int _step;
-
-
-            public PixelSpan(TPixel[] reference, int step, int lo, int hi)
-            {
-                _reference = ref reference[lo];
-                int size = hi - lo;
-                _items = size / step + (size % step == 0 ? 0 : 1);
-                _step = step;
-            }
-
-            public PixelSpan(Span<TPixel> reference, int step, int lo, int hi)
-            {
-                _reference = ref reference[lo];
-                int size = hi - lo;
-                _items = size / step + (size % step == 0 ? 0 : 1);
-                _step = step;
-            }
-
-            public PixelSpan(void* pointer, int step, int lo, int hi)
-            {
-                _reference = ref *((TPixel*)pointer + lo);
-                int size = hi - lo;
-                _items = size / step + (size % step == 0 ? 0 : 1);
-                _step = step;
-            }
-
-
-            public ref TPixel this[int index]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    if ((uint)index >= (uint)_items)
-                        throw new IndexOutOfRangeException();
-                    return ref Unsafe.Add(ref _reference, (nint)(uint)(index * _step));
-                }
-            }
-
-            public int ItemCount
-            {
-                get => _items;
-            }
-
-            public int Step
-            {
-                get => _step;
-            }
-        }
-
-        /// <summary>
-        /// Custom `Span<typeparamref name="TPixel"/>` implementation.
-        /// </summary>
-        /// <typeparam name="TPixel"></typeparam>
-        public readonly ref struct FloatingPixelSpan
-        {
-            /// <summary>A byref or a native ptr.</summary>
-            internal readonly ref TPixel _reference;
-            /// <summary>The number of elements this Span operates on.</summary>
-            private readonly int _items;
-            /// <summary>The number that controls how many where the next elmenet is when indexing.</summary>
-            private readonly double _step;
-
-
-            public FloatingPixelSpan(TPixel[] reference, double step, int lo, int hi)
-            {
-                _reference = ref reference[lo];
-                int size = hi - lo;
-                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
-                _step = step;
-            }
-
-            public FloatingPixelSpan(Span<TPixel> reference, double step, int lo, int hi)
-            {
-                _reference = ref reference[lo];
-                int size = hi - lo;
-                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
-                _step = step;
-            }
-
-            public FloatingPixelSpan(void* pointer, double step, int lo, int hi)
-            {
-                _reference = ref *((TPixel*)pointer + lo);
-                int size = hi - lo;
-                _items = (int)(size / step + (size % step == 0 ? 0 : 1));
-                _step = step;
-            }
-
-            public ref TPixel this[int index]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    if ((uint)index >= (uint)_items) 
-                        throw new IndexOutOfRangeException();
-                    return ref Unsafe.Add(ref _reference, (nint)(uint)(index * _step));
-                }
-            }
-
-            public int ItemCount
-            {
-                get => _items;
-            }
-
-            public double Step
-            {
-                get => _step;
-            }
-        }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
     }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
 }
