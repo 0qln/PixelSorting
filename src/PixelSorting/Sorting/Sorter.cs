@@ -403,6 +403,29 @@ namespace Sorting
             }
         }
 
+        public void SortCornerTriangleRightBottomH(int height, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(height <= _imageHeight);
+            Debug.Assert(height > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = _imageWidth / (double)height;
+
+
+            for (int off = 0; off < slope; off++)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        (double)(_imageWidth - slope),
+                        (int)(Math.Min(i * _imageWidth + _imageWidth + (_imageHeight - height) * _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
+                        (int)(_pixelCount)
+                    ), comparer);
+                }
+            }
+        }
+
+
         /// <summary>
         /// 
         /// </summary>
@@ -421,10 +444,10 @@ namespace Sorting
             double slope = length / (double)_imageHeight;
 
 
-            Console.WriteLine();
-            Console.WriteLine(alpha);
-            Console.WriteLine(length);
-            Console.WriteLine(slope);
+            //Console.WriteLine();
+            //Console.WriteLine(alpha);
+            //Console.WriteLine(length);
+            //Console.WriteLine(slope);
 
 
             if (length > _imageWidth)
@@ -437,8 +460,10 @@ namespace Sorting
 
             else if (length < -_imageWidth)
             {
-                Console.WriteLine("length < -_imageWidth Not implemented");
-                return;
+                length = -(int)(_imageWidth * Math.Tan(alpha));
+
+                SortCornerTriangleRightBottomH(length, comparer);
+                //SortCornerTriangleLeftTopH(length, comparer);
             }
 
             else if (length > 0)

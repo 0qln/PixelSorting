@@ -23,7 +23,7 @@ using TestDataGenerator;
 
 
 
-for (double x = 0.1; x < Math.PI; x += 0.1)
+for (double x = 2.1; x < Math.PI; x += 0.1)
     //for (int x = 100; x <= 800; x += 100)
 {
     string str = x.ToString();
