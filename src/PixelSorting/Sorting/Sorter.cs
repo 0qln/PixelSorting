@@ -364,6 +364,24 @@ namespace Sorting
             }
         }
 
+        public void SortCornerTriangleRightTopH(int height, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(height <= _imageHeight);
+            Debug.Assert(height > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = _imageWidth / (double)height;
+
+            for (int i = 0; i < _imageWidth; i++)
+            {
+                IntrospectiveSort(new FloatingPixelSpan(pixels,
+                    (double)(_imageWidth + slope),
+                    (int)(i),
+                    (int)(height * _imageWidth - i * _imageWidth / slope + _imageWidth)
+                ), comparer);
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -378,28 +396,32 @@ namespace Sorting
 
             // Base length of an edge triangle
             int length = (int)(_imageHeight * Math.Tan(double.Pi / 2 - alpha));
-
-
             // slope of the hypotenuse of an edge triangle
             double slope = length / (double)_imageHeight;
+
 
             Console.WriteLine();
             Console.WriteLine(alpha);
             Console.WriteLine(length);
             Console.WriteLine(slope);
 
+
             if (length > _imageWidth)
             {
+                length = (int)(_imageWidth * Math.Tan(alpha));
 
+                Console.WriteLine(length);
+
+                SortCornerTriangleRightTopH(length, comparer);
             }
 
-            if (length < -_imageWidth)
+            else if (length < -_imageWidth)
             {
                 Console.WriteLine("length < -_imageWidth Not implemented");
                 return;
             }
 
-            if (length > 0)
+            else if (length > 0)
             {
                 SortCornerTriangleLeftBottomW(length, comparer);
                 SortCornerTriangleRightTopW(length, comparer);
@@ -415,7 +437,7 @@ namespace Sorting
                 }
             }
             
-            if (length < 0)
+            else if (length < 0)
             {
                 length = -length;
 
