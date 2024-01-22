@@ -432,7 +432,7 @@ namespace Sorting
                     IntrospectiveSort(new FloatingPixelSpan(pixels,
                         _imageWidth + slope,
                         i,
-                        _pixelCount),
+                        _pixelCount - i),
                     comparer);
                 }
             }

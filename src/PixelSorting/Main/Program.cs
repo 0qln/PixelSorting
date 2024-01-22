@@ -28,7 +28,7 @@ for (double x = 0.1; x < Math.PI; x += 0.1)
 {
     string str = x.ToString();
     str = (str.Length < 3 ? str + ".0" : str)[..3];
-    string SOURCE = $"../../../../../SampleImages/img_0/sample-image-854x480.bmp";
+    string SOURCE = $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp";
     string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp";
     //string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
 
