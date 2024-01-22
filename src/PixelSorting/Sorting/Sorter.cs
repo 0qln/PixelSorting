@@ -382,6 +382,27 @@ namespace Sorting
             }
         }
 
+        public void SortCornerTriangleLeftBottomH(int height, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(height <= _imageHeight);
+            Debug.Assert(height > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = _imageWidth / (double)height;
+
+            for (int off = 0; off < slope; off++)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        (double)(_imageWidth + slope),
+                        (int)(Math.Min((_imageHeight - height + i) * _imageWidth, _pixelCount - _imageWidth) + off),
+                        (int)(_pixelCount - i)
+                    ), comparer);
+                }
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -410,9 +431,8 @@ namespace Sorting
             {
                 length = (int)(_imageWidth * Math.Tan(alpha));
 
-                Console.WriteLine(length);
-
                 SortCornerTriangleRightTopH(length, comparer);
+                SortCornerTriangleLeftBottomH(length, comparer);
             }
 
             else if (length < -_imageWidth)
