@@ -292,19 +292,19 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
 
-            for (int off = 0; off < slope; off++)
-            {
-                for (int i = 0; i < Math.Max(width, _imageHeight); i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        (double)(_imageWidth + slope), 
-                        (int)(Math.Min(i * _imageWidth, _pixelCount - _imageWidth) + off),
-                        (int)(_pixelCount)),
-                    comparer);
-                }
-            }            
+            // REWRITE
+            //for (int off = 0; off < slope; off++)
+            //{
+            //    for (int i = 0; i < Math.Max(width, _imageHeight); i++)
+            //    {
+            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
+            //            (double)(_imageWidth + slope), 
+            //            (int)(Math.Min(i * _imageWidth, _pixelCount - _imageWidth) + off),
+            //            (int)(_pixelCount)),
+            //        comparer);
+            //    }
+            //}            
         }
-
 
         public void SortCornerTriangleRightBottomW(int width, IComparer<TPixel> comparer)
         {
@@ -314,17 +314,18 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
 
-            for (int off = 0; off < slope; off++)
-            {
-                for (int i = 0; i < Math.Max(width, _imageHeight); i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        (double)(_imageWidth - slope),
-                        (int)(Math.Min(i * _imageWidth + _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-                        (int)(_pixelCount)),
-                    comparer);
-                }
-            }
+            // REWRITE
+            //for (int off = 0; off < slope; off++)
+            //{
+            //    for (int i = 0; i < Math.Max(width, _imageHeight); i++)
+            //    {
+            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
+            //            (double)(_imageWidth - slope),
+            //            (int)(Math.Min(i * _imageWidth + _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
+            //            (int)(_pixelCount)),
+            //        comparer);
+            //    }
+            //}
         }
 
         public void SortCornerTriangleRightTopW(int width, IComparer<TPixel> comparer)
@@ -390,17 +391,18 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
-            for (int off = 0; off < slope; off++)
-            {
-                for (int i = 0; i < _imageWidth; i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        (double)(_imageWidth + slope),
-                        (int)(Math.Min((_imageHeight - height + i) * _imageWidth, _pixelCount - _imageWidth) + off),
-                        (int)(_pixelCount - i)
-                    ), comparer);
-                }
-            }
+            // REWRITE
+            //for (int off = 0; off < slope; off++)
+            //{
+            //    for (int i = 0; i < _imageWidth; i++)
+            //    {
+            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
+            //            (double)(_imageWidth + slope),
+            //            (int)(Math.Min((_imageHeight - height + i) * _imageWidth, _pixelCount - _imageWidth) + off),
+            //            (int)(_pixelCount - i)
+            //        ), comparer);
+            //    }
+            //}
         }
 
         public void SortCornerTriangleRightBottomH(int height, IComparer<TPixel> comparer)
@@ -411,17 +413,35 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
+            // REWRITE
+            //for (int off = 0; off < slope; off++)
+            //{
+            //    for (int i = 0; i < _imageWidth; i++)
+            //    {
+            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
+            //            (double)(_imageWidth - slope),
+            //            (int)(Math.Min(i * _imageWidth + _imageWidth + (_imageHeight - height) * _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
+            //            (int)(_pixelCount)
+            //        ), comparer);
+            //    }
+            //}
+        }
 
-            for (int off = 0; off < slope; off++)
+        public void SortCornerTriangleLeftTopH(int height, IComparer<TPixel> comparer)
+        {
+            Debug.Assert(height <= _imageHeight);
+            Debug.Assert(height > 0);
+
+            Span<TPixel> pixels = new(_pixels, _pixelCount);
+            double slope = _imageWidth / (double)height;
+
+            for (int i = 0; i < _imageWidth; i++)
             {
-                for (int i = 0; i < _imageWidth; i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        (double)(_imageWidth - slope),
-                        (int)(Math.Min(i * _imageWidth + _imageWidth + (_imageHeight - height) * _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-                        (int)(_pixelCount)
-                    ), comparer);
-                }
+                IntrospectiveSort(new FloatingPixelSpan(pixels,
+                    (double)(_imageWidth - slope),
+                    (int)(i),
+                    (int)(i * _imageWidth / slope)
+                ), comparer);
             }
         }
 
@@ -463,7 +483,7 @@ namespace Sorting
                 length = -(int)(_imageWidth * Math.Tan(alpha));
 
                 SortCornerTriangleRightBottomH(length, comparer);
-                //SortCornerTriangleLeftTopH(length, comparer);
+                SortCornerTriangleLeftTopH(length, comparer);
             }
 
             else if (length > 0)
