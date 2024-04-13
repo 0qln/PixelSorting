@@ -315,17 +315,37 @@ namespace Sorting
             double slope = width / (double)_imageHeight;
 
             // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < Math.Max(width, _imageHeight); i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth - slope),
-            //            (int)(Math.Min(i * _imageWidth + _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-            //            (int)(_pixelCount)),
-            //        comparer);
-            //    }
-            //}
+
+
+            if (width < _imageHeight)
+            {
+                for (int i = 0; i < _imageHeight; i++)
+                {
+                    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                        (double)(_imageWidth - slope),
+                        (int)Round(i * _imageWidth, _imageWidth) + _imageWidth - 1,
+                        (int)(_pixelCount)),
+                    comparer);
+                }
+            }
+            else
+            {
+                Console.WriteLine(slope);
+
+                // Go along width
+                for (int i = 0; i < width; i++)
+                {
+                    int lo =  (int)Round(i * _imageWidth, _imageWidth) + _imageWidth - 1;
+                    int hi =    (int)_pixelCount;
+                    double step = _imageWidth - slope;
+
+                    IntrospectiveSort(new VerticalFloatingPixelSpan(pixels, 
+                        step, 
+                        lo, 
+                        hi), 
+                    comparer);
+                }
+            }
         }
 
         public void SortCornerTriangleRightTopW(int width, IComparer<TPixel> comparer)
@@ -414,17 +434,15 @@ namespace Sorting
             double slope = _imageWidth / (double)height;
 
             // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < _imageWidth; i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth - slope),
-            //            (int)(Math.Min(i * _imageWidth + _imageWidth + (_imageHeight - height) * _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-            //            (int)(_pixelCount)
-            //        ), comparer);
-            //    }
-            //}
+
+            for (int i = 0; i < _imageWidth; i++)
+            {
+                IntrospectiveSort(new FloatingPixelSpan(pixels,
+                    (double)(_imageWidth - slope),
+                    (int)Round(i * _imageWidth / slope, _imageWidth) + _imageWidth - 1,
+                    (int)(_pixelCount - i)
+                ), comparer);
+            }
         }
 
         public void SortCornerTriangleLeftTopH(int height, IComparer<TPixel> comparer)
@@ -474,22 +492,22 @@ namespace Sorting
             {
                 length = (int)(_imageWidth * Math.Tan(alpha));
 
-                SortCornerTriangleRightTopH(length, comparer);
-                SortCornerTriangleLeftBottomH(length, comparer);
+                //SortCornerTriangleRightTopH(length, comparer);
+                //SortCornerTriangleLeftBottomH(length, comparer);
             }
 
             else if (length < -_imageWidth)
             {
                 length = -(int)(_imageWidth * Math.Tan(alpha));
 
-                SortCornerTriangleRightBottomH(length, comparer);
-                SortCornerTriangleLeftTopH(length, comparer);
+                //SortCornerTriangleRightBottomH(length, comparer);
+                //SortCornerTriangleLeftTopH(length, comparer);
             }
 
             else if (length > 0)
             {
-                SortCornerTriangleLeftBottomW(length, comparer);
-                SortCornerTriangleRightTopW(length, comparer);
+                //SortCornerTriangleLeftBottomW(length, comparer);
+                //SortCornerTriangleRightTopW(length, comparer);
 
                 // Middle parallelogram
                 for (int i = 0; i < _imageWidth - length; i++)
@@ -506,18 +524,18 @@ namespace Sorting
             {
                 length = -length;
 
-                SortCornerTriangleLeftTopW(length, comparer);
+                //SortCornerTriangleLeftTopW(length, comparer);
                 SortCornerTriangleRightBottomW(length, comparer);
 
                 // Middle parallelogram
-                for (int i = length; i < _imageWidth; i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        _imageWidth + slope,
-                        i,
-                        _pixelCount - i),
-                    comparer);
-                }
+                //for (int i = length; i < _imageWidth; i++)
+                //{
+                //    IntrospectiveSort(new FloatingPixelSpan(pixels,
+                //        _imageWidth + slope,
+                //        i,
+                //        _pixelCount - i),
+                //    comparer);
+                //}
             }
 
         }
