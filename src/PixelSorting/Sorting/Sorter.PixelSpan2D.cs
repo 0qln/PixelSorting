@@ -20,9 +20,12 @@ namespace Sorting
             /// <summary>The smaller side length.</summary>
             private readonly int _sizeV;
             /// <summary>The number of elements this Span operates on.</summary>
-            private readonly int _items;
+            // private readonly int _items;
             
-            private readonly float _stepU, _stepV;
+            private readonly int _collectionSize;
+            
+            private readonly double _stepU, _stepV;
+            private readonly int _offU, _offV;
 
 
             /// <summary>
@@ -31,7 +34,7 @@ namespace Sorting
             /// <param name="reference"></param>
             /// <param name="maxU">The greater side length.</param>
             /// <param name="maxV">The smaller side length.</param>
-            public PixelSpan2D(TPixel[] reference, int maxU, int maxV, float stepU, float stepV)
+            public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
 
@@ -40,7 +43,9 @@ namespace Sorting
                 _sizeV = maxV;
                 _stepU = stepU;
                 _stepV = stepV;
-                _items = _sizeU * _sizeV;
+                _offU = offU;
+                _offV = offV;
+                _collectionSize = _sizeU * _sizeV;
             }
 
             /// <summary>
@@ -49,7 +54,7 @@ namespace Sorting
             /// <param name="reference"></param>
             /// <param name="maxU">The greater side length.</param>
             /// <param name="maxV">The smaller side length.</param>
-            public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, float stepU, float stepV)
+            public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
 
@@ -58,7 +63,9 @@ namespace Sorting
                 _sizeV = maxV;
                 _stepU = stepU;
                 _stepV = stepV;
-                _items = _sizeU * _sizeV;
+                _offU = offU;
+                _offV = offV;
+                _collectionSize = _sizeU * _sizeV;
             }
 
             /// <summary>
@@ -67,7 +74,7 @@ namespace Sorting
             /// <param name="reference"></param>
             /// <param name="maxU">The greater side length.</param>
             /// <param name="maxV">The smaller side length.</param>
-            public PixelSpan2D(void* pointer, int maxU, int maxV, float stepU, float stepV)
+            public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
 
@@ -76,7 +83,9 @@ namespace Sorting
                 _sizeV = maxV;
                 _stepU = stepU;
                 _stepV = stepV;
-                _items = _sizeU * _sizeV;
+                _offU = offU;
+                _offV = offV;
+                _collectionSize = _sizeU * _sizeV;
             }
 
 
@@ -92,25 +101,13 @@ namespace Sorting
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
-                    return ref this[(int)(i * _stepU), (int)(i * _stepV)];
-                }
-            }
+                    int u = (int)(i * _stepU) + _offU;
+                    int v = (int)(i * _stepV) + _offV;
 
-            /// <summary>
-            /// Get a reference to an item by it's u and v indeces.
-            /// </summary>
-            /// <param name="u"></param>
-            /// <param name="v"></param>
-            /// <returns></returns>
-            /// <exception cref="IndexOutOfRangeException"></exception>
-            public ref TPixel this[int u, int v]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    int index = u * _sizeU + v;
-                    if ((uint)index >= (uint)_items)
+                    if (u >= _sizeU || v >= _sizeV)
                         throw new IndexOutOfRangeException();
+
+                    int index = u + v * _sizeU;
                     return ref Unsafe.Add(ref _reference, (nint)(uint)(index));
                 }
             }
@@ -120,7 +117,23 @@ namespace Sorting
             /// </summary>
             public int ItemCount
             {
-                get => _items;
+                get 
+                {
+                    // TODO: test this: 
+                    // double deltaU = _sizeU - _offU;
+                    // double deltaV = _sizeV - _offV;
+                    // int stepsU = (int)Math.Ceiling(deltaU / _stepU);
+                    // int stepsV = (int)Math.Ceiling(deltaV / _stepV);
+                    // return Math.Min(stepsU, stepsV);
+                    int result = 0;
+                    double u = _offU, v = _offV;
+                    while (u < _sizeU && v < _sizeV) {
+                        result++;
+                        u += _stepU;
+                        v += _stepV;
+                    }
+                    return result;
+                }
             }
 
             /// <summary>
@@ -145,8 +158,8 @@ namespace Sorting
                 }
             }
 
-            public float StepU => _stepU;
-            public float StepV => _stepV;
+            public double StepU => _stepU;
+            public double StepV => _stepV;
         }
 
     }

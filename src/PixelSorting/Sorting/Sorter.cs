@@ -364,6 +364,70 @@ namespace Sorting
 
         }
 
+        
+        public void NewSort(double alpha, IComparer<TPixel> comparer) {
+            // for (int i = 0; i < _imageHeight; i++) {
+            //     PixelSpan2D pixels = new(_pixels, _imageWidth, _imageHeight, 1, 0, 0, i);
+            //     IntrospectiveSort(pixels, comparer);
+            // }
+            // for (int i = 0; i < _imageWidth; i++) {
+            //     PixelSpan2D pixels = new(_pixels, _imageWidth, _imageHeight, 0, 1, i, 0);
+            //     IntrospectiveSort(pixels, comparer);
+            // }
+            
+            // for (int i = 0; i < length; i++) {
+            //     PixelSpan2D pixels = new(_pixels, _imageWidth, _imageHeight, 1, 0.1f, 0, i);
+            //     IntrospectiveSort(pixels, comparer);
+            // }
+
+            Console.WriteLine(alpha);
+
+            // the diagonal of the pixel-rect.
+            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2)); 
+
+            // the base length of the triangle formed by alpha + pixel-rect height.
+            double baseA(double angle) => c * Math.Sin(angle);
+
+            // the angle of the diagonal of the pixel-rect. 
+            double theta = Math.Asin(_imageWidth / c);
+            Debug.Assert(baseA(theta) == _imageWidth);
+
+            // lower left triangle + upper right triangle: 0 < alpha <= theta
+            PixelSpan2D pixels;
+            if (alpha > 0 && alpha <= theta) {
+                // lower left triangle
+                for (int i = 0; i < _imageHeight; i++) {
+                    pixels = new (
+                            _pixels, 
+                            _imageWidth, 
+                            _imageHeight, 
+                            (alpha > Math.PI / 4) ? (1.0d) : (Math.Tan(alpha)),
+                            (alpha > Math.PI / 4) ? (1.0d / Math.Tan(alpha)) : (1.0d),
+                            0, 
+                            i);
+                    IntrospectiveSort(pixels, comparer);
+
+                }
+                // upper right triangle
+                for (int i = 0; i < _imageWidth; i++) {
+                    pixels = new (
+                            _pixels,
+                            _imageWidth,
+                            _imageHeight,
+                            (alpha > Math.PI / 4) ? (1.0d) : (Math.Tan(alpha)),
+                            (alpha > Math.PI / 4) ? (1.0d / Math.Tan(alpha)) : (1.0d),
+                            i,
+                            0);
+                    IntrospectiveSort(pixels, comparer);
+                }
+            }
+        }
+
+
+        public void IndexTest() {
+            _pixels[0] = default;
+        }
+
 
         /// <summary>
         /// 
