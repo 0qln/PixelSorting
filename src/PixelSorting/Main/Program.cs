@@ -14,7 +14,7 @@ using System.Reflection;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-for (double x = 0.1; x < Math.PI; x += 0.1)
+for (double x = 0.0; x < Math.PI; x += 0.1)
     //for (int x = 100; x <= 800; x += 100)
 {
     string str = x.ToString();

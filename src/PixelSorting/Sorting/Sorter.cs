@@ -383,44 +383,62 @@ namespace Sorting
                         new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
                         comparer);
 
-            if (alpha > 0 && alpha <= Math.PI / 2)
+            // store the result of tan alpha, becuase it is used often.
+            double tanAlpha = Math.Tan(alpha);
+
+            if (alpha == 0) {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
+            }
+
+            else if (alpha > 0 && alpha < Math.PI / 2)
             {
                 // top
                 if (alpha > Math.PI / 4)
                 {
                     for (int i = 0; i < _imageWidth; i++)
-                        Sort(1.0d, 1.0d / Math.Tan(alpha), i, 0);
+                        Sort(1, 1 / tanAlpha, i, 0);
                 }
                 else
                 {
                     for (int i = 0; i < _imageWidth; i++)
-                        Sort(Math.Tan(alpha), 1.0d, i, 0);
+                        Sort(tanAlpha, 1, i, 0);
                 }
 
                 // left
                 for (int i = 0; i < _imageHeight; i++)
-                    Sort(1.0d, 1.0d / Math.Tan(alpha), 0, i);
+                    Sort(1, 1 / tanAlpha, 0, i);
             }
 
-            if (alpha > Math.PI / 2 && alpha < Math.PI)
+            else if (alpha == Math.PI / 2) {
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1, 0, 0, i);
+            }
+
+            else if (alpha > Math.PI / 2 && alpha < Math.PI)
             {
                 // top
                 for (int i = 0; i < _imageWidth; i++)
                 {
-                    Sort(Math.Tan(alpha), 1.0d, i, 0);
+                    Sort(tanAlpha, 1, i, 0);
                 }
 
                 // right
                 if (alpha > Math.PI / 2 + Math.PI / 4)
                 {
                     for (int i = 0; i < _imageHeight; i++)
-                        Sort(Math.Tan(alpha), 1.0d, _imageWidth - 1, i);
+                        Sort(tanAlpha, 1, _imageWidth - 1, i);
                 }
                 else
                 {
                     for (int i = 0; i < _imageHeight; i++)
-                        Sort(-1.0d, -1.0d / Math.Tan(alpha), _imageWidth - 1, i);
+                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
                 }
+            }
+
+            else if (alpha == Math.PI) {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
             }
         }
 
