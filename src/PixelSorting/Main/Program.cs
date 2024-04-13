@@ -21,7 +21,8 @@ for (double x = 0.0; x < Math.PI; x += 0.1)
     str = (str.Length < 3 ? str + ".0" : str)[..3];
     string SOURCE = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
-            $"../../../../../SampleImages/img_0/sample-image-1280x720.bmp"));
+            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+
     string RESULT = Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
             $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
@@ -29,7 +30,7 @@ for (double x = 0.0; x < Math.PI; x += 0.1)
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.NewSort(x, new PixelComparer.Ascending.Red._32bitUnion());
+    sorter.Sort(x, new PixelComparer.Ascending.Red._32bitUnion());
     bmp.Save(RESULT);
 
     Console.WriteLine("Finish iteration " + x);

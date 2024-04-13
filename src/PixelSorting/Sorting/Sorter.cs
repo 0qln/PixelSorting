@@ -365,7 +365,15 @@ namespace Sorting
         }
 
 
-        public void NewSort(double alpha, IComparer<TPixel> comparer)
+        /// <summary>
+        /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
+        ///     alpha(0) ~ Vertical, 
+        ///     alpha(PI / 2) ~ Horizontal, 
+        ///     alpha(PI) ~ Vertical. 
+        /// </summary>
+        /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
+        /// <param name="comparer">The comparer that is used to compare the pixels</param>
+        public void Sort(double alpha, IComparer<TPixel> comparer)
         {
             // the diagonal of the pixel-rect.
             double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
@@ -454,7 +462,7 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle In Radians. [ 0 ; PI ] </param>
         /// <param name="comparer"></param>
-        public void Sort(double alpha, IComparer<TPixel> comparer)
+        public void DepricatedSort(double alpha, IComparer<TPixel> comparer)
         {
             Debug.Assert(alpha > 0);
             Debug.Assert(alpha < double.Pi);
