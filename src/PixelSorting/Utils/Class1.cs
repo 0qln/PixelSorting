@@ -28,5 +28,15 @@
         {
             return start + (end - start) * amount;
         }
+
+        public static int Round(int value, int threshhold)
+        {
+            return value - value % threshhold;
+        }
+
+        public static int Round(double value, int threshhold)
+        {
+            return Round((int)value, threshhold);
+        }
     }
 }
