@@ -15,16 +15,16 @@ using System.Reflection;
 #pragma warning disable CA1416 // Validate platform compatibility
 
 for (double x = 0.0; x < Math.PI; x += 0.1)
-    //for (int x = 100; x <= 800; x += 100)
+//for (int x = 100; x <= 800; x += 100)
 {
     string str = x.ToString();
     str = (str.Length < 3 ? str + ".0" : str)[..3];
     string SOURCE = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
             $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
 
     string RESULT = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
             $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
 
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
@@ -141,7 +141,7 @@ public class ComparingBenchmark
 {
     [ParamsSource(nameof(comparers))]
     public IComparer<Pixel32bit>? comparer;
-    public IEnumerable<IComparer<Pixel32bit>> comparers => [ 
+    public IEnumerable<IComparer<Pixel32bit>> comparers => [
         //new PixelComparer_soA_stR_32bit(),
         //new ComparerIntPixel_soA_stR_1(), 
         //new ComparerIntPixel_soA_stR_2(),
@@ -157,7 +157,7 @@ public class ComparingBenchmark
     {
         if (comparer is null) return;
 
-        var tests = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize { Size=10000, From=0, Step=1, To=10000 }], comparer, 420).ToList();
+        var tests = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize { Size = 10000, From = 0, Step = 1, To = 10000 }], comparer, 420).ToList();
         foreach (var test in tests)
         {
             Sorter<Pixel32bit>.IntrospectiveSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer);
