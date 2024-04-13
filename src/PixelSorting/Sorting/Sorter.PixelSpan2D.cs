@@ -104,7 +104,7 @@ namespace Sorting
                     int u = (int)(i * _stepU) + _offU;
                     int v = (int)(i * _stepV) + _offV;
 
-                    if (u >= _sizeU || v >= _sizeV)
+                    if (u >= _sizeU || v >= _sizeV || u < 0 || v < 0)
                         throw new IndexOutOfRangeException();
 
                     int index = u + v * _sizeU;
@@ -127,7 +127,7 @@ namespace Sorting
                     // return Math.Min(stepsU, stepsV);
                     int result = 0;
                     double u = _offU, v = _offV;
-                    while (u < _sizeU && v < _sizeV) {
+                    while (u < _sizeU && v < _sizeV && u >= 0 && v >= 0) {
                         result++;
                         u += _stepU;
                         v += _stepV;
