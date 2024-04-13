@@ -4,24 +4,14 @@ global using Pixel32bit = int;
 
 
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-using Imaging;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Diagnostics.Runtime.Utilities;
 using Sorting;
 using Sorting.Pixels._24;
 using Sorting.Pixels._32;
-using Sorting.Pixels._8;
 using Sorting.Pixels.Comparer;
-using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using TestDataGenerator;
 
-
+#pragma warning disable CA1416 // Validate platform compatibility
 
 for (double x = 2.1; x < Math.PI; x += 0.1)
     //for (int x = 100; x <= 800; x += 100)
@@ -32,17 +22,16 @@ for (double x = 2.1; x < Math.PI; x += 0.1)
     string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp";
     //string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
 
-#pragma warning disable CA1416 // Validate platform compatibility
-
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
     sorter.Sort(x, new PixelComparer.Ascending.GrayScale._32bitUnion());
     bmp.Save(RESULT);
 
-#pragma warning restore CA1416 // Validate platform compatibility
+    Console.WriteLine("Finish iteration " + x);
 }
 
+return;
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
@@ -123,11 +112,7 @@ public class SpanBenchmark
     public int Step { get; set; }
 
     private PixelComparer.Ascending.Red._32bit comparer = new();
-    List<TestInstance<Pixel32bit>> data;
-
-    public SpanBenchmark()
-    {
-    }
+    List<TestInstance<Pixel32bit>> data = new();
 
 
     [Benchmark]
@@ -150,7 +135,7 @@ public class SpanBenchmark
 public class ComparingBenchmark
 {
     [ParamsSource(nameof(comparers))]
-    public IComparer<Pixel32bit> comparer;
+    public IComparer<Pixel32bit>? comparer;
     public IEnumerable<IComparer<Pixel32bit>> comparers => [ 
         //new PixelComparer_soA_stR_32bit(),
         //new ComparerIntPixel_soA_stR_1(), 
@@ -165,6 +150,8 @@ public class ComparingBenchmark
     [Benchmark]
     public void IntrospectiveSort()
     {
+        if (comparer is null) return;
+
         var tests = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize { Size=10000, From=0, Step=1, To=10000 }], comparer, 420).ToList();
         foreach (var test in tests)
         {
@@ -287,3 +274,5 @@ public class GenericPixelStructureBenchmark<TPixel, TComparer>
         };
     }
 }
+
+#pragma warning restore CA1416 // Validate platform compatibility

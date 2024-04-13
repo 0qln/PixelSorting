@@ -379,6 +379,7 @@ namespace Sorting
 
             // Base length of an edge triangle
             int length = (int)(_imageHeight * Math.Tan(double.Pi / 2 - alpha));
+
             // slope of the hypotenuse of an edge triangle
             double slope = length / (double)_imageHeight;
 
