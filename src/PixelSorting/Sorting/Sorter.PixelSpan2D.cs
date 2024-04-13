@@ -15,29 +15,26 @@ namespace Sorting
         {
             /// <summary>A byref or a native ptr.</summary>
             internal readonly ref TPixel _reference;
-            /// <summary>The greater side length.</summary>
+            /// <summary>The side length 1.</summary>
             private readonly int _sizeU;
-            /// <summary>The smaller side length.</summary>
+            /// <summary>The side length 2.</summary>
             private readonly int _sizeV;
-            /// <summary>The number of elements this Span operates on.</summary>
-            // private readonly int _items;
-            
+            /// <summary>The number of elements this span operates on.</summary>
+            private readonly int _itemCount;
+            /// <summary>The size of the collection from which this span selects items.</summary>
             private readonly int _collectionSize;
-            
+
             private readonly double _stepU, _stepV;
             private readonly int _offU, _offV;
 
-
             /// <summary>
             /// 
             /// </summary>
             /// <param name="reference"></param>
-            /// <param name="maxU">The greater side length.</param>
-            /// <param name="maxV">The smaller side length.</param>
+            /// <param name="maxU">The first side length.</param>
+            /// <param name="maxV">The second side length.</param>
             public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
-
                 _reference = ref reference[0];
                 _sizeU = maxU;
                 _sizeV = maxV;
@@ -46,18 +43,17 @@ namespace Sorting
                 _offU = offU;
                 _offV = offV;
                 _collectionSize = _sizeU * _sizeV;
+                _itemCount = EstimateItemCount();
             }
 
             /// <summary>
             /// 
             /// </summary>
             /// <param name="reference"></param>
-            /// <param name="maxU">The greater side length.</param>
-            /// <param name="maxV">The smaller side length.</param>
+            /// <param name="maxU">The first side length.</param>
+            /// <param name="maxV">The second side length.</param>
             public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
-
                 _reference = ref reference[0];
                 _sizeU = maxU;
                 _sizeV = maxV;
@@ -66,18 +62,17 @@ namespace Sorting
                 _offU = offU;
                 _offV = offV;
                 _collectionSize = _sizeU * _sizeV;
+                _itemCount = EstimateItemCount();
             }
 
             /// <summary>
             /// 
             /// </summary>
             /// <param name="reference"></param>
-            /// <param name="maxU">The greater side length.</param>
-            /// <param name="maxV">The smaller side length.</param>
+            /// <param name="maxU">The first side length.</param>
+            /// <param name="maxV">The second side length.</param>
             public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxU, maxV);
-
                 _reference = ref *((TPixel*)pointer);
                 _sizeU = maxU;
                 _sizeV = maxV;
@@ -86,8 +81,23 @@ namespace Sorting
                 _offU = offU;
                 _offV = offV;
                 _collectionSize = _sizeU * _sizeV;
+                _itemCount = EstimateItemCount();
             }
 
+            /// <summary>
+            /// Generates an estimate of how many items this span will operate on.
+            /// </summary>
+            private int EstimateItemCount()
+            {
+                int result = 0;
+                double u = _offU, v = _offV;
+                while (u < _sizeU && v < _sizeV && u >= 0 && v >= 0) {
+                    result++;
+                    u += _stepU;
+                    v += _stepV;
+                }
+                return result;
+            }
 
             /// <summary>
             /// Get a reference to an item by index, calculated using u, v steps from initiation.
@@ -101,11 +111,11 @@ namespace Sorting
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
+                    if (i >= _itemCount || i < 0)
+                        throw new IndexOutOfRangeException();
+
                     int u = (int)(i * _stepU) + _offU;
                     int v = (int)(i * _stepV) + _offV;
-
-                    if (u >= _sizeU || v >= _sizeV || u < 0 || v < 0)
-                        throw new IndexOutOfRangeException();
 
                     int index = u + v * _sizeU;
                     return ref Unsafe.Add(ref _reference, (nint)(uint)(index));
@@ -117,22 +127,9 @@ namespace Sorting
             /// </summary>
             public int ItemCount
             {
-                get 
+                get
                 {
-                    // TODO: test this: 
-                    // double deltaU = _sizeU - _offU;
-                    // double deltaV = _sizeV - _offV;
-                    // int stepsU = (int)Math.Ceiling(deltaU / _stepU);
-                    // int stepsV = (int)Math.Ceiling(deltaV / _stepV);
-                    // return Math.Min(stepsU, stepsV);
-                    int result = 0;
-                    double u = _offU, v = _offV;
-                    while (u < _sizeU && v < _sizeV && u >= 0 && v >= 0) {
-                        result++;
-                        u += _stepU;
-                        v += _stepV;
-                    }
-                    return result;
+                    return _itemCount;
                 }
             }
 
@@ -159,6 +156,7 @@ namespace Sorting
             }
 
             public double StepU => _stepU;
+
             public double StepV => _stepV;
         }
 

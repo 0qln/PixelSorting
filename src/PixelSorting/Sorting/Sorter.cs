@@ -419,7 +419,6 @@ namespace Sorting
                 }
 
                 // right
-                Console.WriteLine(-1.0d /Math.Tan(alpha));
                 for (int i = 0; i < _imageHeight; i++) {
                     IntrospectiveSort(new PixelSpan2D(
                         _pixels,
