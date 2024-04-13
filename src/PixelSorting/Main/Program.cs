@@ -10,6 +10,7 @@ using Sorting.Pixels._32;
 using Sorting.Pixels.Comparer;
 using System.Drawing.Imaging;
 using TestDataGenerator;
+using System.Reflection;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
@@ -18,11 +19,14 @@ for (double x = 2.1; x < Math.PI; x += 0.1)
 {
     string str = x.ToString();
     str = (str.Length < 3 ? str + ".0" : str)[..3];
-    string SOURCE = $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp";
-    string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp";
-    //string RESULT = $"../../../../../SampleImages/img_0/sample-image-RESULT.bmp";
+    string SOURCE = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
+            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+    string RESULT = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, 
+            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
 
-    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+    var bmp = Imaging.Utils.GetBitmap(@"D:\Programmmieren\Projects\ImageSorterTesting\src\SampleImages\img_0\sample-image-1920x1080.bmp");
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
     sorter.Sort(x, new PixelComparer.Ascending.GrayScale._32bitUnion());
