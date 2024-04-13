@@ -291,7 +291,7 @@ namespace Sorting
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
-         
+
         }
 
         public void SortCornerTriangleRightBottomW(int width, IComparer<TPixel> comparer)
@@ -364,10 +364,11 @@ namespace Sorting
 
         }
 
-        
-        public void NewSort(double alpha, IComparer<TPixel> comparer) {
+
+        public void NewSort(double alpha, IComparer<TPixel> comparer)
+        {
             // the diagonal of the pixel-rect.
-            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2)); 
+            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
 
             // the base length of the triangle formed by alpha + pixel-rect height.
             double baseA(double angle) => c * Math.Sin(angle);
@@ -376,65 +377,56 @@ namespace Sorting
             double theta = Math.Asin(_imageWidth / c);
             Debug.Assert(baseA(theta) == _imageWidth);
 
-            if (alpha > 0 && alpha <= Math.PI / 2) {
+            // Local function to shorten syntax.
+            void Sort(double ustep, double vstep, int uoff, int voff)
+                => IntrospectiveSort(
+                        new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
+                        comparer);
+
+            if (alpha > 0 && alpha <= Math.PI / 2)
+            {
                 // top
-                for (int i = 0; i < _imageWidth; i++) {
-                    IntrospectiveSort(new PixelSpan2D(
-                        _pixels,
-                        _imageWidth,
-                        _imageHeight,
-                        (alpha > Math.PI / 4) ? (1.0d) : (Math.Tan(alpha)),
-                        (alpha > Math.PI / 4) ? (1.0d / Math.Tan(alpha)) : (1.0d),
-                        i,
-                        0), 
-                    comparer);
+                if (alpha > Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(1.0d, 1.0d / Math.Tan(alpha), i, 0);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(Math.Tan(alpha), 1.0d, i, 0);
                 }
 
                 // left
-                for (int i = 0; i < _imageHeight; i++) {
-                    IntrospectiveSort(new PixelSpan2D(
-                        _pixels,
-                        _imageWidth,
-                        _imageHeight,
-                        1.0d,
-                        1.0d / Math.Tan(alpha),
-                        0,
-                        i),
-                    comparer);
-                }
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1.0d, 1.0d / Math.Tan(alpha), 0, i);
             }
 
-            if (alpha > Math.PI / 2 && alpha < Math.PI) {
+            if (alpha > Math.PI / 2 && alpha < Math.PI)
+            {
                 // top
-                for (int i = 0; i < _imageWidth; i++) {
-                    IntrospectiveSort(new PixelSpan2D(
-                        _pixels,
-                        _imageWidth,
-                        _imageHeight,
-                        (Math.Tan(alpha)),
-                        (1.0d),
-                        i,
-                        0), 
-                    comparer);
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    Sort(Math.Tan(alpha), 1.0d, i, 0);
                 }
 
                 // right
-                for (int i = 0; i < _imageHeight; i++) {
-                    IntrospectiveSort(new PixelSpan2D(
-                        _pixels,
-                        _imageWidth,
-                        _imageHeight,
-                        (alpha > Math.PI / 2 + Math.PI / 4) ? Math.Tan(alpha) : -1.0d,
-                        (alpha > Math.PI / 2 + Math.PI / 4) ? 1.0d : -1.0d / Math.Tan(alpha),
-                        _imageWidth - 1,
-                        i),
-                    comparer);
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(Math.Tan(alpha), 1.0d, _imageWidth - 1, i);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(-1.0d, -1.0d / Math.Tan(alpha), _imageWidth - 1, i);
                 }
             }
         }
 
 
-        public void IndexTest() {
+        public void IndexTest()
+        {
             _pixels[0] = default;
         }
 
@@ -489,7 +481,7 @@ namespace Sorting
                     comparer);
                 }
             }
-            
+
             else if (length < 0)
             {
                 length = -length;
