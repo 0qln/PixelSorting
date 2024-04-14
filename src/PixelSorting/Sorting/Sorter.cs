@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
-using static Utils.Utils;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Diagnostics;
 
 namespace Sorting
@@ -292,18 +282,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
 
-            // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < Math.Max(width, _imageHeight); i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth + slope), 
-            //            (int)(Math.Min(i * _imageWidth, _pixelCount - _imageWidth) + off),
-            //            (int)(_pixelCount)),
-            //        comparer);
-            //    }
-            //}            
         }
 
         public void SortCornerTriangleRightBottomW(int width, IComparer<TPixel> comparer)
@@ -314,18 +292,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
 
-            // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < Math.Max(width, _imageHeight); i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth - slope),
-            //            (int)(Math.Min(i * _imageWidth + _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-            //            (int)(_pixelCount)),
-            //        comparer);
-            //    }
-            //}
         }
 
         public void SortCornerTriangleRightTopW(int width, IComparer<TPixel> comparer)
@@ -335,16 +301,7 @@ namespace Sorting
 
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
-            int begin = _imageWidth - width;
-            
-            for (int i = 0; i < width; i++)
-            {
-                IntrospectiveSort(new FloatingPixelSpan(pixels, 
-                    (double)(_imageWidth + slope), 
-                    (int)(begin + i), 
-                    (int)(_pixelCount - i * _imageWidth / slope + _imageWidth - 1)
-                ), comparer);
-            }
+
         }
 
         public void SortCornerTriangleLeftTopW(int width, IComparer<TPixel> comparer)
@@ -355,14 +312,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = width / (double)_imageHeight;
 
-            for (int i = 0; i < width; i++)
-            {
-                IntrospectiveSort(new FloatingPixelSpan(pixels,
-                    (double)(_imageWidth - slope),
-                    (int)(i),
-                    (int)(_pixelCount - (width - i) * _imageWidth / slope)
-                ), comparer);
-            }
         }
 
         public void SortCornerTriangleRightTopH(int height, IComparer<TPixel> comparer)
@@ -373,14 +322,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
-            for (int i = 0; i < _imageWidth; i++)
-            {
-                IntrospectiveSort(new FloatingPixelSpan(pixels,
-                    (double)(_imageWidth + slope),
-                    (int)(i),
-                    (int)(height * _imageWidth - i * _imageWidth / slope + _imageWidth)
-                ), comparer);
-            }
         }
 
         public void SortCornerTriangleLeftBottomH(int height, IComparer<TPixel> comparer)
@@ -391,18 +332,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
-            // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < _imageWidth; i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth + slope),
-            //            (int)(Math.Min((_imageHeight - height + i) * _imageWidth, _pixelCount - _imageWidth) + off),
-            //            (int)(_pixelCount - i)
-            //        ), comparer);
-            //    }
-            //}
         }
 
         public void SortCornerTriangleRightBottomH(int height, IComparer<TPixel> comparer)
@@ -413,18 +342,6 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
-            // REWRITE
-            //for (int off = 0; off < slope; off++)
-            //{
-            //    for (int i = 0; i < _imageWidth; i++)
-            //    {
-            //        IntrospectiveSort(new FloatingPixelSpan(pixels,
-            //            (double)(_imageWidth - slope),
-            //            (int)(Math.Min(i * _imageWidth + _imageWidth + (_imageHeight - height) * _imageWidth, _pixelCount - _imageWidth) - (off + 1)),
-            //            (int)(_pixelCount)
-            //        ), comparer);
-            //    }
-            //}
         }
 
         public void SortCornerTriangleLeftTopH(int height, IComparer<TPixel> comparer)
@@ -435,14 +352,98 @@ namespace Sorting
             Span<TPixel> pixels = new(_pixels, _pixelCount);
             double slope = _imageWidth / (double)height;
 
-            for (int i = 0; i < _imageWidth; i++)
-            {
-                IntrospectiveSort(new FloatingPixelSpan(pixels,
-                    (double)(_imageWidth - slope),
-                    (int)(i),
-                    (int)(i * _imageWidth / slope)
-                ), comparer);
+        }
+
+
+        /// <summary>
+        /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
+        ///     alpha(0) ~ Vertical, 
+        ///     alpha(PI / 2) ~ Horizontal, 
+        ///     alpha(PI) ~ Vertical. 
+        /// </summary>
+        /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
+        /// <param name="comparer">The comparer that is used to compare the pixels</param>
+        public void Sort(double alpha, IComparer<TPixel> comparer)
+        {
+            // the diagonal of the pixel-rect.
+            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
+
+            // the base length of the triangle formed by alpha + pixel-rect height.
+            double baseA(double angle) => c * Math.Sin(angle);
+
+            // the angle of the diagonal of the pixel-rect. 
+            double theta = Math.Asin(_imageWidth / c);
+            Debug.Assert(baseA(theta) == _imageWidth);
+
+            // Local function to shorten syntax.
+            void Sort(double ustep, double vstep, int uoff, int voff)
+                => IntrospectiveSort(
+                        new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
+                        comparer);
+
+            // store the result of tan alpha, becuase it is used often.
+            double tanAlpha = Math.Tan(alpha);
+
+            if (alpha == 0) {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
             }
+
+            else if (alpha > 0 && alpha < Math.PI / 2)
+            {
+                // top
+                if (alpha > Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(1, 1 / tanAlpha, i, 0);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(tanAlpha, 1, i, 0);
+                }
+
+                // left
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1, 1 / tanAlpha, 0, i);
+            }
+
+            else if (alpha == Math.PI / 2) {
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1, 0, 0, i);
+            }
+
+            else if (alpha > Math.PI / 2 && alpha < Math.PI)
+            {
+                // top
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    Sort(tanAlpha, 1, i, 0);
+                }
+
+                // right
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(tanAlpha, 1, _imageWidth - 1, i);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
+                }
+            }
+
+            else if (alpha == Math.PI) {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
+            }
+        }
+
+
+        public void IndexTest()
+        {
+            _pixels[0] = default;
         }
 
 
@@ -451,7 +452,7 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle In Radians. [ 0 ; PI ] </param>
         /// <param name="comparer"></param>
-        public void Sort(double alpha, IComparer<TPixel> comparer)
+        public void DepricatedSort(double alpha, IComparer<TPixel> comparer)
         {
             Debug.Assert(alpha > 0);
             Debug.Assert(alpha < double.Pi);
@@ -460,14 +461,9 @@ namespace Sorting
 
             // Base length of an edge triangle
             int length = (int)(_imageHeight * Math.Tan(double.Pi / 2 - alpha));
+
             // slope of the hypotenuse of an edge triangle
             double slope = length / (double)_imageHeight;
-
-
-            //Console.WriteLine();
-            //Console.WriteLine(alpha);
-            //Console.WriteLine(length);
-            //Console.WriteLine(slope);
 
 
             if (length > _imageWidth)
@@ -501,7 +497,7 @@ namespace Sorting
                     comparer);
                 }
             }
-            
+
             else if (length < 0)
             {
                 length = -length;

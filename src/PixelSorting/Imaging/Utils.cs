@@ -1,9 +1,6 @@
-﻿using Sorting;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
-using System.Reflection;
 using TestDataGenerator;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Imaging
 {

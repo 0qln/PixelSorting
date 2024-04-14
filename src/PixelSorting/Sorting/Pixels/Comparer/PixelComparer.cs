@@ -1,11 +1,6 @@
 ﻿using Sorting.Pixels._24;
 using Sorting.Pixels._32;
 using Sorting.Pixels._8;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sorting.Pixels.Comparer
 {

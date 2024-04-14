@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Sorting.Pixels.Comparer
+﻿namespace Sorting.Pixels.Comparer
 {
     public class ComparerUIntPixel24bit_soA_stR1 : IComparer<uint>
     {
