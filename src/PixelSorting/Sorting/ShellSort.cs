@@ -10,11 +10,33 @@ namespace Sorting
     public partial class Sorter<TPixel>
         where TPixel : struct
     {
-        private static readonly int[] SHELLSORT_GAPS = [701, 301, 132, 57, 23, 10, 4, 1];
+        // TODO: Increase customizability => pick another squence with more gaps.
 
-        public static void ShellSort(PixelSpan2D span, IComparer<TPixel> comparer, int hi, int lo)
+        // Ciura gap sequence
+        private static readonly int[] SHELLSORT_GAPS = [701, 301, 132, 57, 23, 10, 4, 1];
+        public static readonly int PurenessMax = SHELLSORT_GAPS.Length - 1;
+
+
+        /// <summary>
+        /// Sort the array with a selected level of pureness.
+        /// </summary>
+        /// <param name="span"></param>
+        /// <param name="comparer"></param>
+        /// <param name="lo">Inlcusive</param>
+        /// <param name="hi">Exclusive</param>
+        /// <param name="pureness">
+        /// An impure span is a not completeley sorted span. Pureness increases overhead in 
+        /// O(n^2) fashion, where n is number of elements in the span. 
+        /// </param>
+        /// <exception cref="ArgumentException"></exception>
+        public static void ShellSort(PixelSpan2D span, IComparer<TPixel> comparer, int lo, int hi, int pureness)
         {
-            for (int gapIndex = 0; gapIndex < SHELLSORT_GAPS.Length; gapIndex++)
+            if (pureness < 0 || pureness >= SHELLSORT_GAPS.Length)
+            {
+                throw new ArgumentException(nameof(pureness));
+            }
+
+            for (int gapIndex = 0; gapIndex <= pureness; gapIndex++)
             {
                 for (int gap = SHELLSORT_GAPS[gapIndex], i = gap + lo; i < hi; i++)
                 {
@@ -33,11 +55,6 @@ namespace Sorting
         }
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="span"></param>
-        /// <param name="comparer"></param>
         public static void ShellSort(PixelSpan span, IComparer<TPixel> comparer)
         {
             for (int gapIndex = 0; gapIndex < SHELLSORT_GAPS.Length; gapIndex++)
