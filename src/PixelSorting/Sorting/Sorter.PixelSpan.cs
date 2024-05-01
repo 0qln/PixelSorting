@@ -45,6 +45,14 @@ namespace Sorting
                 _step = step;
             }
 
+            public PixelSpan(nint pointer, int step, int lo, int hi)
+            {
+                _reference = ref *((TPixel*)pointer + lo);
+                int size = hi - lo;
+                _items = size / step + (size % step == 0 ? 0 : 1);
+                _step = step;
+            }
+
 
             public ref TPixel this[int index]
             {

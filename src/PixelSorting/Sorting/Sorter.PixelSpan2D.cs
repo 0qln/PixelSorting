@@ -21,8 +21,6 @@ namespace Sorting
             private readonly int _sizeV;
             /// <summary>The number of elements this span operates on.</summary>
             private readonly int _itemCount;
-            /// <summary>The size of the collection from which this span selects items.</summary>
-            private readonly int _collectionSize;
 
             private readonly double _stepU, _stepV;
             private readonly int _offU, _offV;
@@ -42,8 +40,7 @@ namespace Sorting
                 _stepV = stepV;
                 _offU = offU;
                 _offV = offV;
-                _collectionSize = _sizeU * _sizeV;
-                _itemCount = EstimateItemCount();
+                _itemCount = FastEstimateItemCount();
             }
 
             /// <summary>
@@ -61,8 +58,7 @@ namespace Sorting
                 _stepV = stepV;
                 _offU = offU;
                 _offV = offV;
-                _collectionSize = _sizeU * _sizeV;
-                _itemCount = EstimateItemCount();
+                _itemCount = FastEstimateItemCount();
             }
 
             /// <summary>
@@ -80,14 +76,72 @@ namespace Sorting
                 _stepV = stepV;
                 _offU = offU;
                 _offV = offV;
-                _collectionSize = _sizeU * _sizeV;
-                _itemCount = EstimateItemCount();
+                _itemCount = FastEstimateItemCount();
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="reference"></param>
+            /// <param name="maxU">The first side length.</param>
+            /// <param name="maxV">The second side length.</param>
+            public PixelSpan2D(nint pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            {
+                _reference = ref *((TPixel*)pointer);
+                _sizeU = maxU;
+                _sizeV = maxV;
+                _stepU = stepU;
+                _stepV = stepV;
+                _offU = offU;
+                _offV = offV;
+                _itemCount = FastEstimateItemCount();
+            }
+
+            /// <summary>
+            /// Prone to floating point inaccuracy;
+            /// this sometimes estimates one item to few.
+            /// </summary>
+            /// <returns></returns>
+            public int FastEstimateItemCount()
+            {
+                double uSlots, vSlots;
+
+                // Possible slots in direction u
+                if (_stepU > 0)
+                {
+                    uSlots = Math.Round((_sizeU - _offU) / _stepU);
+                }
+                else if (_stepU < 0)
+                {
+                    uSlots = _offU / -_stepU + 1;
+                }
+                else
+                {
+                    uSlots = double.PositiveInfinity;
+                }
+
+                // Possible slots in direction v
+                if (_stepV > 0)
+                {
+                    vSlots = Math.Round((_sizeV - _offV) / _stepV);
+                }
+                else if (_stepV < 0)
+                {
+                    vSlots = _offV / -_stepV + 1;
+                }
+                else
+                {
+                    vSlots = double.PositiveInfinity;
+                }
+
+                // Choose the minimum bound.
+                return (int)(Math.Min(uSlots, vSlots));
             }
 
             /// <summary>
             /// Generates an estimate of how many items this span will operate on.
             /// </summary>
-            private int EstimateItemCount()
+            public int EstimateItemCount()
             {
                 int result = 0;
                 double u = _offU, v = _offV;
@@ -118,6 +172,7 @@ namespace Sorting
                     int v = (int)(i * _stepV) + _offV;
 
                     int index = u + v * _sizeU;
+
                     return ref Unsafe.Add(ref _reference, (nint)(uint)(index));
                 }
             }
@@ -155,8 +210,16 @@ namespace Sorting
                 }
             }
 
+            /// <summary>
+            /// The step that each index takes in direction u.
+            /// This can be negative.
+            /// </summary>
             public double StepU => _stepU;
 
+            /// <summary>
+            /// The step that each index takes in direction v.
+            /// This can be negative.
+            /// </summary>
             public double StepV => _stepV;
         }
 

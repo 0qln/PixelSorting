@@ -42,7 +42,7 @@ using BenchmarkDotNet.Running;
 
 //return;
 
-BenchmarkRunner.Run<SortBenchmark>();
+BenchmarkRunner.Run<SpanBenchmark>();
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
@@ -97,6 +97,64 @@ public class SortBenchmark
 
 public class SpanBenchmark
 {
+    #region Initiation
+
+    /*
+     
+    Begin:
+    | Method      | Mean           | Error       | StdDev      |
+    |------------ |---------------:|------------:|------------:|
+    | PixelSpan   |       367.5 ns |     0.92 ns |     0.86 ns |
+    | PixelSpan2D | 2,172,930.9 ns | 9,920.29 ns | 9,279.45 ns |
+
+    Holy overhead ! :o
+
+
+    FastEstimateItemCount:
+    | Method      | Mean       | Error    | StdDev   |
+    |------------ |-----------:|---------:|---------:|
+    | PixelSpan   |   367.3 ns |  6.45 ns |  5.72 ns |
+    | PixelSpan2D | 3,642.1 ns | 49.75 ns | 46.53 ns |
+    | Method      | Mean       | Error    | StdDev   |
+
+    8915347 Bug fixes later:
+    |------------ |-----------:|---------:|---------:|
+    | PixelSpan   |   372.6 ns |  5.22 ns |  4.88 ns |
+    | PixelSpan2D | 4,742.8 ns | 38.04 ns | 35.58 ns |
+
+     */
+
+    int Width = 1920, Height = 1080;
+    Pixel32bitUnion[] Data;
+
+    public SpanBenchmark()
+    {
+        Data = new Pixel32bitUnion[Width * Height];
+    }
+
+    [Benchmark]
+    public void PixelSpan()
+    {
+        for (int i = 0; i < Height; i++)
+        {
+            int lo = i * Width;
+            new Sorter<Pixel32bitUnion>.PixelSpan(Data, 1, lo, lo + Width);
+        }
+    }
+
+    [Benchmark]
+    public void PixelSpan2D()
+    {
+        for (int i = 0; i < Height; i++)
+        {
+            new Sorter<Pixel32bitUnion>.PixelSpan2D(Data, Width, Height, 1, 0, 0, i);
+        }
+    }
+
+    #endregion
+
+
+    #region Insertion sort runtime
     /*
     | Method    | Size  | Step | Mean          | Error         | StdDev        |
     |---------- |------ |----- |--------------:|--------------:|--------------:|
@@ -125,31 +183,32 @@ public class SpanBenchmark
     | PixelSpan | 10000 | 100  |    948.901 us |     3.0210 us |     2.6780 us |
     | Span      | 10000 | 100  |    884.895 us |     4.0391 us |     3.7782 us |
      */
-    [Params(10000, 1000, 100)]
-    public int Size { get; set; }
+    //[Params(10000, 1000, 100)]
+    //public int Size { get; set; }
 
-    [Params(100, 10, 1, 3)]
-    public int Step { get; set; }
+    //[Params(100, 10, 1, 3)]
+    //public int Step { get; set; }
 
-    private PixelComparer.Ascending.Red._32bit comparer = new();
-    List<TestInstance<Pixel32bit>> data = new();
+    //private PixelComparer.Ascending.Red._32bit comparer = new();
+    //List<TestInstance<Pixel32bit>> data = new();
 
 
-    [Benchmark]
-    public void PixelSpan()
-    {
-        data = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize(Size, Step, 0, Size)], comparer, 420).ToList();
-        var instance = data.First();
-        Sorter<Pixel32bit>.InsertionSort(new Sorter<int>.PixelSpan(instance.Unsorted, instance.Properties.Step, instance.Properties.From, instance.Properties.To), comparer);
-    }
+    //[Benchmark]
+    //public void PixelSpan()
+    //{
+    //    data = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize(Size, Step, 0, Size)], comparer, 420).ToList();
+    //    var instance = data.First();
+    //    Sorter<Pixel32bit>.InsertionSort(new Sorter<int>.PixelSpan(instance.Unsorted, instance.Properties.Step, instance.Properties.From, instance.Properties.To), comparer);
+    //}
 
-    [Benchmark]
-    public void Span()
-    {
-        data = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize(Size, Step, 0, Size)], comparer, 420).ToList();
-        var instance = data.First();
-        Sorter<Pixel32bit>.InsertionSort(new Span<int>(instance.Unsorted), comparer, instance.Properties.Step, instance.Properties.From, instance.Properties.To);
-    }
+    //[Benchmark]
+    //public void Span()
+    //{
+    //    data = Generator.GenerateTestingData<Pixel32bit>([new TestDataSize(Size, Step, 0, Size)], comparer, 420).ToList();
+    //    var instance = data.First();
+    //    Sorter<Pixel32bit>.InsertionSort(new Span<int>(instance.Unsorted), comparer, instance.Properties.Step, instance.Properties.From, instance.Properties.To);
+    //}
+    #endregion
 }
 
 public class ComparingBenchmark
