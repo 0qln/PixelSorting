@@ -363,6 +363,96 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
         /// <param name="comparer">The comparer that is used to compare the pixels</param>
+        public void SortAlternative(double alpha, IComparer<TPixel> comparer, int pureness)
+        {
+            // the diagonal of the pixel-rect.
+            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
+
+            // the base length of the triangle formed by alpha + pixel-rect height.
+            double baseA(double angle) => c * Math.Sin(angle);
+
+            // the angle of the diagonal of the pixel-rect. 
+            double theta = Math.Asin(_imageWidth / c);
+            Debug.Assert(baseA(theta) == _imageWidth);
+
+            // Local function to shorten syntax.
+            void Sort(double ustep, double vstep, int uoff, int voff)
+            {
+                var span = new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                CombSort(span, comparer, pureness);
+            }
+
+            // store the result of tan alpha, becuase it is used often.
+            double tanAlpha = Math.Tan(alpha);
+
+            if (alpha == 0)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
+            }
+
+            else if (alpha > 0 && alpha < Math.PI / 2)
+            {
+                // top
+                if (alpha > Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(1, 1 / tanAlpha, i, 0);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        Sort(tanAlpha, 1, i, 0);
+                }
+
+                // left
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1, 1 / tanAlpha, 0, i);
+            }
+
+            else if (alpha == Math.PI / 2)
+            {
+                for (int i = 0; i < _imageHeight; i++)
+                    Sort(1, 0, 0, i);
+            }
+
+            else if (alpha > Math.PI / 2 && alpha < Math.PI)
+            {
+                // top
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    Sort(tanAlpha, 1, i, 0);
+                }
+
+                // right
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(tanAlpha, 1, _imageWidth - 1, i);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
+                }
+            }
+
+            else if (alpha == Math.PI)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                    Sort(0, 1, i, 0);
+            }
+        }
+
+
+        /// <summary>
+        /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
+        ///     alpha(0) ~ Vertical, 
+        ///     alpha(PI / 2) ~ Horizontal, 
+        ///     alpha(PI) ~ Vertical. 
+        /// </summary>
+        /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
+        /// <param name="comparer">The comparer that is used to compare the pixels</param>
         public void Sort(double alpha, IComparer<TPixel> comparer, int pureness)
         {
             // the diagonal of the pixel-rect.
