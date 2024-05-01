@@ -2,6 +2,7 @@
 {
     public static class Utils
     {
+#pragma warning disable CS8500
         public static unsafe TResult ReinterpretCast<TSource, TResult>(this TSource source)
         {
             var sourceRef = __makeref(source);
@@ -10,6 +11,7 @@
             *(IntPtr*)&destRef = *(IntPtr*)&sourceRef;
             return __refvalue(destRef, TResult);
         }
+#pragma warning restore CS8500
 
         public static IEnumerable<TResult> ReinterpretCast<TSource, TResult>(this IEnumerable<TSource> source)
         {
