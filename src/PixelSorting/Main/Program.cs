@@ -11,73 +11,88 @@ using Sorting.Pixels.Comparer;
 using System.Drawing.Imaging;
 using TestDataGenerator;
 using System.Reflection;
+using BenchmarkDotNet.Running;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-for (double x = 0.0; x < Math.PI; x += 0.1)
-//for (int x = 100; x <= 800; x += 100)
-{
-    string str = x.ToString();
-    str = (str.Length < 3 ? str + ".0" : str)[..3];
-    string SOURCE = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+//for (double x = 0.0; x < Math.PI; x += 0.1)
+//double x = Math.PI / 2;
+//{
+//    string str = x.ToString();
+//    str = (str.Length < 3 ? str + ".0" : str)[..3];
+//    string SOURCE = Path.GetFullPath(Path.Combine(
+//            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+//            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
 
-    string RESULT = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
+//    string RESULT = Path.GetFullPath(Path.Combine(
+//            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+//            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
 
-    var bmp = Imaging.Utils.GetBitmap(SOURCE);
-    var data = Imaging.Utils.ExposeData(bmp);
-    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortAlternative(x, new PixelComparer.Ascending.Red._32bitUnion(), pureness: 3);
-    bmp.Save(RESULT);
+//    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+//    var data = Imaging.Utils.ExposeData(bmp);
+//    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+//    //sorter.Sort(x, new PixelComparer.Ascending.Red._32bitUnion());
+//    sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._32bitUnion());
+//    bmp.Save(RESULT);
 
-    Console.WriteLine("Finish iteration " + x);
-}
+//    Console.WriteLine("Finish iteration " + x);
+//}
 
-return;
+
+
+//return;
+
+BenchmarkRunner.Run<SortBenchmark>();
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 public class SortBenchmark
 {
-    const string SOURCE = "../../../../../SampleImages/sample-image (1080p Full HD).bmp";
+    string source;
+    BitmapData data;
+    PixelComparer.Ascending.Red._32bitUnion comparer;
 
 
-    public SortBenchmark()
+
+    #region Directional
+
+    /* 
+    
+    | Method            | Mean     | Error    | StdDev   |
+    |------------------ |---------:|---------:|---------:|
+    | ConstantDirection | 10.55 ms | 0.073 ms | 0.065 ms |
+    | DynamicDirection  | 19.22 ms | 0.085 ms | 0.071 ms |
+
+    holy overhead!
+
+     */
+
+    [Benchmark]
+    public void ConstantDirection()
     {
-        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(SOURCE));
+        source = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../../../../../SampleImages/img_0/benchmark_copy_1.bmp"));
+        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(source));
         comparer = new();
-        threshhold = new Pixel24bitExplicitStruct { B = 100, G = 100, R = 200 };
-    }
-
-    public BitmapData data;
-    PixelComparer.Ascending.Red._24bitExplicitStruct comparer;
-    static Pixel24bitExplicitStruct threshhold;
-
-
-    [Benchmark]
-    public void ThreshholdWithSpan()
-    {
-        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-        //sorter.Sort(SortDirection.Horizontal, comparer, threshhold, true);
-    }
-
-    [Benchmark]
-    public void ThreshholdWithoutSpan()
-    {
-        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
-        //sorter.Sort(SortDirection.Horizontal, comparer, threshhold, false);
-    }
-
-    [Benchmark]
-    public void NoThreshhold()
-    {
-        var sorter = new Sorter<Pixel24bitExplicitStruct>(data.Scan0, data.Width, data.Height, data.Stride);
+        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
         sorter.Sort(SortDirection.Horizontal, comparer);
     }
+
+    [Benchmark]
+    public void DynamicDirection()
+    {
+        source = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../../../../../SampleImages/img_0/benchmark_copy_2.bmp"));
+        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(source));
+        comparer = new();
+        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.Sort(Math.PI / 2, comparer);
+    }
+
+    #endregion
 }
 
 public class SpanBenchmark
