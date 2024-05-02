@@ -12,37 +12,38 @@ using System.Drawing.Imaging;
 using TestDataGenerator;
 using System.Reflection;
 using BenchmarkDotNet.Running;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
 //for (double x = 0.0; x < Math.PI; x += 0.1)
-//double x = Math.PI / 2;
-//{
-//    string str = x.ToString();
-//    str = (str.Length < 3 ? str + ".0" : str)[..3];
-//    string SOURCE = Path.GetFullPath(Path.Combine(
-//            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-//            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+    double x = Math.PI / 2;
+{
+    string str = x.ToString();
+    str = (str.Length < 3 ? str + ".0" : str)[..3];
+    string SOURCE = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
 
-//    string RESULT = Path.GetFullPath(Path.Combine(
-//            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-//            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
+    string RESULT = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
 
-//    var bmp = Imaging.Utils.GetBitmap(SOURCE);
-//    var data = Imaging.Utils.ExposeData(bmp);
-//    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-//    //sorter.Sort(x, new PixelComparer.Ascending.Red._32bitUnion());
-//    sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._32bitUnion());
-//    bmp.Save(RESULT);
+    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+    var data = Imaging.Utils.ExposeData(bmp);
+    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+    sorter.SortUnsafe(x, new PixelComparer.Ascending.Red._32bitUnion());
+    //sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._32bitUnion());
+    bmp.Save(RESULT);
 
-//    Console.WriteLine("Finish iteration " + x);
-//}
+    Console.WriteLine("Finish iteration " + x);
+}
 
 
 
 //return;
 
-BenchmarkRunner.Run<SpanBenchmark>();
+BenchmarkRunner.Run<SortBenchmark>();
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
@@ -53,6 +54,70 @@ public class SortBenchmark
     BitmapData data;
     PixelComparer.Ascending.Red._32bitUnion comparer;
 
+
+    #region Exception Handling
+
+    /* 
+    
+    Without bounds check:
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 16.38 ms | 0.327 ms | 0.306 ms |
+    | Safe   | 19.91 ms | 0.240 ms | 0.224 ms |
+
+    Without flooring before adding u and v (probably gives wrong results, should be tested):
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 14.99 ms | 0.065 ms | 0.058 ms |
+
+    `with` keyword as initiator:
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 14.98 ms | 0.039 ms | 0.031 ms |
+    
+    Index precalculationg and caching:
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 11.24 ms | 0.097 ms | 0.086 ms |
+
+    Inlined indexer span:
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 10.50 ms | 0.033 ms | 0.031 ms |
+
+    Reintroduce bounds checks:
+    | Method | Mean     | Error    | StdDev   |
+    |------- |---------:|---------:|---------:|
+    | Unsafe | 11.74 ms | 0.197 ms | 0.184 ms |
+
+
+     */
+
+    [Benchmark]
+    public void Unsafe()
+    {
+        source = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../../../../../SampleImages/img_0/benchmark_copy_1.bmp"));
+        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(source));
+        comparer = new();
+        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.SortUnsafe(Math.PI / 2, comparer);
+    }
+
+    //[Benchmark]
+    public void Safe()
+    {
+        source = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../../../../../SampleImages/img_0/benchmark_copy_2.bmp"));
+        data = Imaging.Utils.ExposeData(Imaging.Utils.GetBitmap(source));
+        comparer = new();
+        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.Sort(Math.PI / 2, comparer);
+    }
+
+    #endregion
 
 
     #region Directional
@@ -68,7 +133,7 @@ public class SortBenchmark
 
      */
 
-    [Benchmark]
+    //[Benchmark]
     public void ConstantDirection()
     {
         source = Path.GetFullPath(Path.Combine(
@@ -80,7 +145,7 @@ public class SortBenchmark
         sorter.Sort(SortDirection.Horizontal, comparer);
     }
 
-    [Benchmark]
+    //[Benchmark]
     public void DynamicDirection()
     {
         source = Path.GetFullPath(Path.Combine(
