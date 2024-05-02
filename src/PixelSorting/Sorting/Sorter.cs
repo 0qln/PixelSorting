@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Sorting.Pixels.KeySelector;
 
 namespace Sorting
 {
@@ -404,6 +405,18 @@ namespace Sorting
             {
                 var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
                 IntrospectiveSort(span, comparer);
+            }
+
+            return Sort;
+        }
+
+
+        public AngleSorter PigeonSorter(IOrderedKeySelector<TPixel> selector)
+        {
+            void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
+            {
+                var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                PigeonholeSort(span, selector);
             }
 
             return Sort;
