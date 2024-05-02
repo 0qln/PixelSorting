@@ -363,7 +363,7 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
         /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void SortAlternative(double alpha, IComparer<TPixel> comparer, int pureness)
+        public void CombSort(double alpha, IComparer<TPixel> comparer, int pureness)
         {
             // the diagonal of the pixel-rect.
             double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
@@ -454,7 +454,7 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
         /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void Sort(double alpha, IComparer<TPixel> comparer, int pureness)
+        public void ShellSort(double alpha, IComparer<TPixel> comparer, int pureness)
         {
             // the diagonal of the pixel-rect.
             double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));

@@ -16,8 +16,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-//for (double x = 0.0; x < Math.PI; x += 0.1)
-    double x = Math.PI / 2;
+for (double x = 0.0; x < Math.PI; x += 0.1)
+//double x = Math.PI / 2;
 {
     string str = x.ToString();
     str = (str.Length < 3 ? str + ".0" : str)[..3];
@@ -32,7 +32,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
     var bmp = Imaging.Utils.GetBitmap(SOURCE);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortUnsafe(x, new PixelComparer.Ascending.Red._32bitUnion());
+    sorter.CombSort(x, new PixelComparer.Ascending.Red._32bitUnion(), pureness: 3);
     //sorter.Sort(SortDirection.Horizontal, new PixelComparer.Ascending.Red._32bitUnion());
     bmp.Save(RESULT);
 
