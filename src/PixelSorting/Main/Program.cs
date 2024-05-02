@@ -41,11 +41,6 @@ string RunThrough(double angle, int outPrecision = 6)
     return str;
 }
 
-//for (double variance = 0.00000; variance < 0.00010; variance += 0.00001)
-//        RunThrough(0.7853 + variance, outPrecision: 7);
-
-RunThrough(0.7853981633974488, outPrecision: 30);
-
 void Rotate(int times)
 {
     int i = 1;
@@ -53,20 +48,15 @@ void Rotate(int times)
     {
         var watch = Stopwatch.StartNew();
 
-        var angle = RunThrough(x, 12);
+        var angle = RunThrough(x, 30);
 
         watch.Stop();
 
-        if (angle == "0.7853981633")
-        {
-            Console.WriteLine(x);
-        }
-
-        Console.WriteLine($"[{(i++).ToString().PadLeft(2)}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {angle} Radians in {watch.ElapsedMilliseconds} Milliseconds");
+        Console.WriteLine($"[{(i++).ToString().PadLeft(4)}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {angle} Radians in {watch.ElapsedMilliseconds} Milliseconds");
     }
 }
 
-//Rotate(128);
+Rotate(1024);
 
 //return;
 
