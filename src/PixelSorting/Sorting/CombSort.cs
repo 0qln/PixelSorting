@@ -24,10 +24,12 @@ namespace Sorting
                     gap = 1;
                     sorted = true;
                 }
-                //else if (gap == 9 || gap == 10)
-                //{
-                //    gap = 11;
-                //}
+                // We can use an optimization here, as there is no cusom request
+                // to keep the pureness low.
+                else if (gap == 9 || gap == 10)
+                {
+                    gap = 11;
+                }
 
                 for (int i = 0; i + gap < span.ItemCount; i++)
                 {
@@ -55,10 +57,6 @@ namespace Sorting
                     gap = 1;
                     sorted = true;
                 }
-                //else if (gap == 9 || gap == 10)
-                //{
-                //    gap = 11;
-                //}
 
                 for (int i = 0; i + gap < span.ItemCount; i++)
                 {
@@ -87,10 +85,6 @@ namespace Sorting
                     gap = 1;
                     sorted = true;
                 }
-                //else if (gap == 9 || gap == 10)
-                //{
-                //    gap = 11;
-                //}
 
                 for (int i = 0; i + gap < span.ItemCount; i++)
                 {

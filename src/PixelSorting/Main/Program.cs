@@ -193,6 +193,19 @@ public class SortBenchmark
     | Comb      | 3840 |   345.23 us |  2.139 us |  1.896 us |
     | Shell     | 3840 |   358.01 us |  4.541 us |  4.248 us |
     
+    
+    // Comb sort with 'rule of 11':
+    | Method        | size | Mean      | Error    | StdDev   |
+    |-------------- |----- |----------:|---------:|---------:|
+    | Comb          | 1280 | 106.94 us | 0.341 us | 0.285 us |
+    | OptimizedComb | 1280 |  94.42 us | 0.316 us | 0.264 us |
+    | Comb          | 1920 | 156.79 us | 0.485 us | 0.454 us |
+    | OptimizedComb | 1920 | 145.33 us | 1.745 us | 1.632 us |
+    | Comb          | 2560 | 214.06 us | 1.163 us | 0.908 us |
+    | OptimizedComb | 2560 | 195.01 us | 0.669 us | 0.558 us |
+    | Comb          | 3840 | 338.51 us | 1.742 us | 1.455 us |
+    | OptimizedComb | 3840 | 320.40 us | 3.060 us | 2.555 us |
+     
      */
 
     public IEnumerable<int> TestInstancesSource => Generator.CommonImageSizesL().Select(x => x.Horizontal).Skip(4);
@@ -214,8 +227,6 @@ public class SortBenchmark
         indeces = new nint[size];
         return new Sorter<Pixel32bitUnion>.PixelSpan2D(test, indeces, size, 1, 1, 0, 0, 0);
     }
-
-    [Benchmark] public void Pigeon() => Sorter<Pixel32bitUnion>.PigeonholeSort(PrepareInput(), selector);
 
     //[Benchmark] public void Intro() => Sorter<Pixel32bitUnion>.IntrospectiveSort(PrepareInput(), comparer);
     //[Benchmark] public void Pigeon() => Sorter<Pixel32bitUnion>.PigeonholeSort(PrepareInput(), selector);
