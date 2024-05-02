@@ -20,6 +20,7 @@ using Sorting.Pixels.KeySelector;
 for (double x = 0.0; x < Math.PI; x += 0.1)
 //double x = Math.PI / 2;
 {
+    break;
     string str = x.ToString();
     str = (str.Length < 3 ? str + ".0" : str)[..3];
     string SOURCE = Path.GetFullPath(Path.Combine(
@@ -34,28 +35,25 @@ for (double x = 0.0; x < Math.PI; x += 0.1)
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
     //sorter.AngleSort(x, sorter.FastSort(new PixelComparer.Ascending.Red._32bitUnion()));
-    sorter.AngleSort(x, sorter.PigeonSorter(new OrderedKeySelector.Descending.Red._32bitUnion()));
+    sorter.AngleSort(x, sorter.InsertionSorter(new PixelComparer.Descending.Red._32bitUnion()));
     bmp.Save(RESULT);
 
     Console.WriteLine("Finish iteration " + x);
 }
 
 
+//new SortBenchmark() { size = 1920 }.Insertion();
+
 
 //return;
 
-//BenchmarkRunner.Run<SortBenchmark>();
+BenchmarkRunner.Run<SortBenchmark>();
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 public class SortBenchmark
 {
-    string source;
-    BitmapData data;
-    PixelComparer.Ascending.Red._32bitUnion comparer;
-
-
     #region Exception Handling
 
     /* 
@@ -156,6 +154,75 @@ public class SortBenchmark
     //    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
     //    sorter.Sort(Math.PI / 2, comparer);
     //}
+
+    #endregion
+
+
+    #region Sorting method
+
+    /*
+    
+    | Method    | size | Mean        | Error     | StdDev    |
+    |---------- |----- |------------:|----------:|----------:|
+    
+    | Intro     | 1280 |    76.50 us |  1.331 us |  1.245 us |
+    | Pigeon    | 1280 |    28.49 us |  0.258 us |  0.201 us |
+    | Heap      | 1280 |   118.96 us |  2.305 us |  2.654 us |
+    | Insertion | 1280 |   711.55 us | 11.506 us | 10.200 us |
+    | Comb      | 1280 |   116.72 us |  2.284 us |  2.805 us |
+    | Shell     | 1280 |   118.41 us |  2.363 us |  5.430 us |
+
+    | Intro     | 1920 |   116.44 us |  2.296 us |  2.457 us |
+    | Pigeon    | 1920 |    39.29 us |  0.660 us |  1.066 us |
+    | Heap      | 1920 |   173.64 us |  0.475 us |  0.371 us |
+    | Insertion | 1920 | 1,107.09 us |  9.524 us |  8.442 us |
+    | Comb      | 1920 |   162.30 us |  0.321 us |  0.284 us |
+    | Shell     | 1920 |   173.76 us |  1.498 us |  1.328 us |
+    
+    | Intro     | 2560 |   153.64 us |  0.870 us |  0.727 us |
+    | Pigeon    | 2560 |    47.42 us |  0.307 us |  0.257 us |
+    | Heap      | 2560 |   239.18 us |  2.938 us |  2.748 us |
+    | Insertion | 2560 | 2,752.26 us | 51.128 us | 66.481 us |
+    | Comb      | 2560 |   224.01 us |  4.347 us |  5.652 us |
+    | Shell     | 2560 |   231.80 us |  0.993 us |  0.829 us |
+    
+    | Intro     | 3840 |   244.66 us |  3.099 us |  2.747 us |
+    | Pigeon    | 3840 |    70.12 us |  0.665 us |  0.589 us |
+    | Heap      | 3840 |   383.10 us |  3.288 us |  2.567 us |
+    | Insertion | 3840 | 4,364.99 us | 84.025 us | 96.763 us |
+    | Comb      | 3840 |   345.23 us |  2.139 us |  1.896 us |
+    | Shell     | 3840 |   358.01 us |  4.541 us |  4.248 us |
+    
+     */
+
+    public IEnumerable<int> TestInstancesSource => Generator.CommonImageSizesL().Select(x => x.Horizontal).Skip(4);
+
+    [ParamsSource(nameof(TestInstancesSource))]
+    public int size;
+
+    private IOrderedKeySelector<Pixel32bitUnion> selector = new OrderedKeySelector.Descending.Red._32bitUnion();
+    private IComparer<Pixel32bitUnion> comparer = new PixelComparer.Descending.Red._32bitUnion();
+
+    private nint[] indeces;
+
+    private Random rng = new Random(857943);
+
+
+    private Sorter<Pixel32bitUnion>.PixelSpan2D PrepareInput()
+    {
+        var test = Enumerable.Range(0, size).Select(x => new Pixel32bitUnion { Int = rng.Next() }).ToArray();
+        indeces = new nint[size];
+        return new Sorter<Pixel32bitUnion>.PixelSpan2D(test, indeces, size, 1, 1, 0, 0, 0);
+    }
+
+    [Benchmark] public void Pigeon() => Sorter<Pixel32bitUnion>.PigeonholeSort(PrepareInput(), selector);
+
+    //[Benchmark] public void Intro() => Sorter<Pixel32bitUnion>.IntrospectiveSort(PrepareInput(), comparer);
+    //[Benchmark] public void Pigeon() => Sorter<Pixel32bitUnion>.PigeonholeSort(PrepareInput(), selector);
+    //[Benchmark] public void Heap() => Sorter<Pixel32bitUnion>.HeapSort(PrepareInput(), comparer);
+    //[Benchmark] public void Insertion() => Sorter<Pixel32bitUnion>.InsertionSort(PrepareInput(), comparer);
+    //[Benchmark] public void Comb() => Sorter<Pixel32bitUnion>.CombSort(PrepareInput(), comparer);
+    //[Benchmark] public void Shell() => Sorter<Pixel32bitUnion>.ShellSort(PrepareInput(), comparer);
 
     #endregion
 }
@@ -360,11 +427,6 @@ public class ComparingBenchmark
 [GenericTypeArguments(typeof(Pixel24bitStruct), typeof(PixelComparer.Ascending.Red._24bitStruct))]
 [GenericTypeArguments(typeof(Pixel24bitRecord), typeof(PixelComparer.Ascending.Red._24bitRecord))]
 [GenericTypeArguments(typeof(Pixel24bitExplicitStruct), typeof(PixelComparer.Ascending.Red._24bitExplicitStruct))]
-/* Benchmarks
-all about equal...
- */
-
-
 public class GenericPixelStructureBenchmark<TPixel, TComparer>
     where TPixel : struct
     where TComparer : IComparer<TPixel>, new()
