@@ -90,7 +90,6 @@ public class SortBenchmark
     |------- |---------:|---------:|---------:|
     | Unsafe | 11.74 ms | 0.197 ms | 0.184 ms |
 
-
      */
 
     [Benchmark]
