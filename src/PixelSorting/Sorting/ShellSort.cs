@@ -14,7 +14,7 @@ namespace Sorting
 
         // Ciura gap sequence
         private static readonly int[] SHELLSORT_GAPS = [701, 301, 132, 57, 23, 10, 4, 1];
-        public static readonly int PurenessMax = SHELLSORT_GAPS.Length - 1;
+        public static readonly int ShellPurenessMax = SHELLSORT_GAPS.Length - 1;
 
 
         /// <summary>

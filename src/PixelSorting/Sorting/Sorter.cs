@@ -107,6 +107,8 @@ namespace Sorting
      */
     #endregion
 
+    // TODO: this can be a readonly ref struct.
+
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
     public unsafe partial class Sorter<TPixel>
         where TPixel : struct
@@ -118,8 +120,6 @@ namespace Sorting
         private readonly byte* _bytes;
         private readonly int _pixelCount;
         private readonly TPixel* _pixels;
-
-        private readonly double GAMMA;
 
 
         /// <summary>
@@ -144,9 +144,8 @@ namespace Sorting
             _pixels = (TPixel*)byteDataBegin;
             _byteCount = (ulong)height * (ulong)stride;
             _pixelCount = height * width;
-
-            GAMMA = 1.0 / Math.Tan(width / height);
         }
+
 
         /// <summary>
         /// Initialize a Sorter.
@@ -157,21 +156,9 @@ namespace Sorting
         /// <param name="stride">The width of the image in bytes.</param>
         /// <exception cref="ArgumentException"></exception>
         public Sorter(ref TPixel byteDataBegin, int width, int height, int stride)
+            : this ((nint)Unsafe.AsPointer(ref byteDataBegin), width, height, stride)
         {
-            _bytesPerPixel = stride / width;
-            if (_bytesPerPixel != Marshal.SizeOf<TPixel>())
-            {
-                throw new ArgumentException("Given `stride` to `width` ratio does not match the struct size of `TPixel`.");
-            }
-            _imageStride = stride;
-            _imageHeight = height;
-            _imageWidth = width;
-            _bytes = (byte*)Unsafe.AsPointer(ref byteDataBegin);
-            _pixels = (TPixel*)Unsafe.AsPointer(ref byteDataBegin);
-            _byteCount = (ulong)height * (ulong)stride;
-            _pixelCount = height * width;
         }
-
 
 
         public unsafe bool NextRowPixelSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorX, Span<TPixel> pixels)
@@ -209,6 +196,7 @@ namespace Sorting
             return true;
         }
 
+
         public unsafe bool NextColPixelSpan(int x, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorY, Span<TPixel> pixels)
         {
             // Remember where we started
@@ -241,13 +229,14 @@ namespace Sorting
         }
 
 
-        public unsafe PixelSpan GetRowPixelSpan(int y)
+        public PixelSpan GetRowPixelSpan(int y)
         {
             int lo = y * _imageWidth;
             return new PixelSpan(_pixels, 1, lo, lo + _imageWidth);
         }
 
-        public unsafe PixelSpan GetColPixelSpan(int x)
+
+        public PixelSpan GetColPixelSpan(int x)
         {
             return new PixelSpan(_pixels, _imageWidth, x, _pixelCount);
         }
@@ -274,96 +263,18 @@ namespace Sorting
         }
 
 
-        public void SortCornerTriangleLeftBottomW(int width, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(width <= _imageWidth);
-            Debug.Assert(width > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = width / (double)_imageHeight;
-
-        }
-
-        public void SortCornerTriangleRightBottomW(int width, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(width <= _imageWidth);
-            Debug.Assert(width > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = width / (double)_imageHeight;
-
-        }
-
-        public void SortCornerTriangleRightTopW(int width, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(width <= _imageWidth);
-            Debug.Assert(width > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = width / (double)_imageHeight;
-
-        }
-
-        public void SortCornerTriangleLeftTopW(int width, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(width <= _imageWidth);
-            Debug.Assert(width > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = width / (double)_imageHeight;
-
-        }
-
-        public void SortCornerTriangleRightTopH(int height, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(height <= _imageHeight);
-            Debug.Assert(height > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = _imageWidth / (double)height;
-
-        }
-
-        public void SortCornerTriangleLeftBottomH(int height, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(height <= _imageHeight);
-            Debug.Assert(height > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = _imageWidth / (double)height;
-
-        }
-
-        public void SortCornerTriangleRightBottomH(int height, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(height <= _imageHeight);
-            Debug.Assert(height > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = _imageWidth / (double)height;
-
-        }
-
-        public void SortCornerTriangleLeftTopH(int height, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(height <= _imageHeight);
-            Debug.Assert(height > 0);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-            double slope = _imageWidth / (double)height;
-
-        }
+        public delegate void AngleSorter(double ustep, double vstep, int uoff, int voff, nint[] indeces);
 
 
         /// <summary>
-        /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
+        /// Sort the image along the angle <paramref name="alpha"/>, where: 
         ///     alpha(0) ~ Vertical, 
         ///     alpha(PI / 2) ~ Horizontal, 
         ///     alpha(PI) ~ Vertical. 
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-        /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void CombSort(double alpha, IComparer<TPixel> comparer, int pureness)
+        /// <param name="sorter">The sort function.</param>
+        public void AngleSort(double alpha, AngleSorter sorter)
         {
             // the diagonal of the pixel-rect.
             double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
@@ -377,72 +288,85 @@ namespace Sorting
 
             // Local function to shorten syntax.
             nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
-            void Sort(double ustep, double vstep, int uoff, int voff)
+
+            // store the result of tan alpha, becuase it is used often.
+            double tanAlpha = Math.Tan(alpha);
+
+            if (alpha == 0)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                    sorter(0, 1, i, 0, indeces);
+            }
+
+            else if (alpha > 0 && alpha < Math.PI / 2)
+            {
+                // top
+                if (alpha > Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        sorter(1, 1 / tanAlpha, i, 0, indeces);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageWidth; i++)
+                        sorter(tanAlpha, 1, i, 0, indeces);
+                }
+
+                // left
+                for (int i = 0; i < _imageHeight; i++)
+                    sorter(1, 1 / tanAlpha, 0, i, indeces);
+            }
+
+            else if (alpha == Math.PI / 2)
+            {
+                for (int i = 0; i < _imageHeight; i++)
+                    sorter(1, 0, 0, i, indeces);
+            }
+
+            else if (alpha > Math.PI / 2 && alpha < Math.PI)
+            {
+                // top
+                for (int i = 0; i < _imageWidth; i++)
+                {
+                    sorter(tanAlpha, 1, i, 0, indeces);
+                }
+
+                // right
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        sorter(tanAlpha, 1, _imageWidth - 1, i, indeces);
+                }
+                else
+                {
+                    for (int i = 0; i < _imageHeight; i++)
+                        sorter(-1, -1 / tanAlpha, _imageWidth - 1, i, indeces);
+                }
+            }
+
+            else if (alpha == Math.PI)
+            {
+                for (int i = 0; i < _imageWidth; i++)
+                    sorter(0, 1, i, 0, indeces);
+            }
+        }
+
+
+        /// <summary>
+        /// Create a comb sorter.
+        /// </summary>
+        /// <param name="comparer"></param>
+        /// <param name="pureness"></param>
+        /// <returns></returns>
+        public AngleSorter CombSort(IComparer<TPixel> comparer, int pureness)
+        {
+            void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
             {
                 var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
                 CombSort(span, comparer, pureness);
             }
 
-            // store the result of tan alpha, becuase it is used often.
-            double tanAlpha = Math.Tan(alpha);
-
-            if (alpha == 0)
-            {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
-
-            else if (alpha > 0 && alpha < Math.PI / 2)
-            {
-                // top
-                if (alpha > Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(1, 1 / tanAlpha, i, 0);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(tanAlpha, 1, i, 0);
-                }
-
-                // left
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 1 / tanAlpha, 0, i);
-            }
-
-            else if (alpha == Math.PI / 2)
-            {
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 0, 0, i);
-            }
-
-            else if (alpha > Math.PI / 2 && alpha < Math.PI)
-            {
-                // top
-                for (int i = 0; i < _imageWidth; i++)
-                {
-                    Sort(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(tanAlpha, 1, _imageWidth - 1, i);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
-                }
-            }
-
-            else if (alpha == Math.PI)
-            {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
+            return Sort;
         }
 
 
@@ -454,86 +378,15 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
         /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void ShellSort(double alpha, IComparer<TPixel> comparer, int pureness)
+        public AngleSorter ShellSort(IComparer<TPixel> comparer, int pureness)
         {
-            // the diagonal of the pixel-rect.
-            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
-
-            // the base length of the triangle formed by alpha + pixel-rect height.
-            double baseA(double angle) => c * Math.Sin(angle);
-
-            // the angle of the diagonal of the pixel-rect. 
-            double theta = Math.Asin(_imageWidth / c);
-            Debug.Assert(baseA(theta) == _imageWidth);
-
-            // Local function to shorten syntax.
-            nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
-            void Sort(double ustep, double vstep, int uoff, int voff)
+            void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
             {
                 var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
                 ShellSort(span, comparer, 0, span.ItemCount, pureness);
             }
 
-            // store the result of tan alpha, becuase it is used often.
-            double tanAlpha = Math.Tan(alpha);
-
-            if (alpha == 0)
-            {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
-
-            else if (alpha > 0 && alpha < Math.PI / 2)
-            {
-                // top
-                if (alpha > Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(1, 1 / tanAlpha, i, 0);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(tanAlpha, 1, i, 0);
-                }
-
-                // left
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 1 / tanAlpha, 0, i);
-            }
-
-            else if (alpha == Math.PI / 2)
-            {
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 0, 0, i);
-            }
-
-            else if (alpha > Math.PI / 2 && alpha < Math.PI)
-            {
-                // top
-                for (int i = 0; i < _imageWidth; i++)
-                {
-                    Sort(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(tanAlpha, 1, _imageWidth - 1, i);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
-                }
-            }
-
-            else if (alpha == Math.PI)
-            {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
+            return Sort;
         }
 
 
@@ -545,17 +398,23 @@ namespace Sorting
         /// </summary>
         /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
         /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void SortUnsafe(double alpha, IComparer<TPixel> comparer)
+        public AngleSorter FastSort(IComparer<TPixel> comparer)
+        {
+            void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
+            {
+                var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                IntrospectiveSort(span, comparer);
+            }
+
+            return Sort;
+        }
+
+
+        // Used for testing.
+        internal void SortUnsafe(double alpha, IComparer<TPixel> comparer)
         {
             // the diagonal of the pixel-rect.
             double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
-
-            // the base length of the triangle formed by alpha + pixel-rect height.
-            double baseA(double angle) => c * Math.Sin(angle);
-
-            // the angle of the diagonal of the pixel-rect. 
-            double theta = Math.Asin(_imageWidth / c);
-            Debug.Assert(baseA(theta) == _imageWidth);
 
             // Local function to shorten syntax.
             nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
@@ -615,170 +474,6 @@ namespace Sorting
             }
         }
 
-
-        /// <summary>
-        /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
-        ///     alpha(0) ~ Vertical, 
-        ///     alpha(PI / 2) ~ Horizontal, 
-        ///     alpha(PI) ~ Vertical. 
-        /// </summary>
-        /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-        /// <param name="comparer">The comparer that is used to compare the pixels</param>
-        public void Sort(double alpha, IComparer<TPixel> comparer)
-        {
-            // the diagonal of the pixel-rect.
-            double c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
-
-            // the base length of the triangle formed by alpha + pixel-rect height.
-            double baseA(double angle) => c * Math.Sin(angle);
-
-            // the angle of the diagonal of the pixel-rect. 
-            double theta = Math.Asin(_imageWidth / c);
-            Debug.Assert(baseA(theta) == _imageWidth);
-
-            // Local function to shorten syntax.
-            nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
-            void Sort(double ustep, double vstep, int uoff, int voff)
-                => IntrospectiveSort(
-                        new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
-                        comparer);
-
-            // store the result of tan alpha, becuase it is used often.
-            double tanAlpha = Math.Tan(alpha);
-
-            if (alpha == 0) {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
-
-            else if (alpha > 0 && alpha < Math.PI / 2)
-            {
-                // top
-                if (alpha > Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(1, 1 / tanAlpha, i, 0);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageWidth; i++)
-                        Sort(tanAlpha, 1, i, 0);
-                }
-
-                // left
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 1 / tanAlpha, 0, i);
-            }
-
-            else if (alpha == Math.PI / 2) {
-                for (int i = 0; i < _imageHeight; i++)
-                    Sort(1, 0, 0, i);
-            }
-
-            else if (alpha > Math.PI / 2 && alpha < Math.PI)
-            {
-                // top
-                for (int i = 0; i < _imageWidth; i++)
-                {
-                    Sort(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(tanAlpha, 1, _imageWidth - 1, i);
-                }
-                else
-                {
-                    for (int i = 0; i < _imageHeight; i++)
-                        Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
-                }
-            }
-
-            else if (alpha == Math.PI) {
-                for (int i = 0; i < _imageWidth; i++)
-                    Sort(0, 1, i, 0);
-            }
-        }
-
-
-        public void IndexTest()
-        {
-            _pixels[0] = default;
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="alpha">Angle In Radians. [ 0 ; PI ] </param>
-        /// <param name="comparer"></param>
-        public void DepricatedSort(double alpha, IComparer<TPixel> comparer)
-        {
-            Debug.Assert(alpha > 0);
-            Debug.Assert(alpha < double.Pi);
-
-            Span<TPixel> pixels = new(_pixels, _pixelCount);
-
-            // Base length of an edge triangle
-            int length = (int)(_imageHeight * Math.Tan(double.Pi / 2 - alpha));
-
-            // slope of the hypotenuse of an edge triangle
-            double slope = length / (double)_imageHeight;
-
-
-            if (length > _imageWidth)
-            {
-                length = (int)(_imageWidth * Math.Tan(alpha));
-
-                SortCornerTriangleRightTopH(length, comparer);
-                SortCornerTriangleLeftBottomH(length, comparer);
-            }
-
-            else if (length < -_imageWidth)
-            {
-                length = -(int)(_imageWidth * Math.Tan(alpha));
-
-                SortCornerTriangleRightBottomH(length, comparer);
-                SortCornerTriangleLeftTopH(length, comparer);
-            }
-
-            else if (length > 0)
-            {
-                SortCornerTriangleLeftBottomW(length, comparer);
-                SortCornerTriangleRightTopW(length, comparer);
-
-                // Middle parallelogram
-                for (int i = 0; i < _imageWidth - length; i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        _imageWidth + slope,
-                        i,
-                        _pixelCount),
-                    comparer);
-                }
-            }
-
-            else if (length < 0)
-            {
-                length = -length;
-
-                SortCornerTriangleLeftTopW(length, comparer);
-                SortCornerTriangleRightBottomW(length, comparer);
-
-                // Middle parallelogram
-                for (int i = length; i < _imageWidth; i++)
-                {
-                    IntrospectiveSort(new FloatingPixelSpan(pixels,
-                        _imageWidth + slope,
-                        i,
-                        _pixelCount - i),
-                    comparer);
-                }
-            }
-
-        }
 
         public void Sort(SortDirection sortDirection, IComparer<TPixel> comparer, TPixel threshhold)
         {
