@@ -14,40 +14,46 @@ using System.Reflection;
 using BenchmarkDotNet.Running;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Sorting.Pixels.KeySelector;
+using System.Diagnostics;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
-for (double x = 0.0; x < Math.PI; x += 0.1)
-//double x = Math.PI / 2;
+void Rotate(int times)
 {
-    break;
-    string str = x.ToString();
-    str = (str.Length < 3 ? str + ".0" : str)[..3];
-    string SOURCE = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+    int i = 1;
+    for (double x = 0.0; x < Math.PI; x += Math.PI / times)
+    {
+        var watch = Stopwatch.StartNew();
 
-    string RESULT = Path.GetFullPath(Path.Combine(
-            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
+        string str = x.ToString();
+        str = (str.Contains('.') ? str : str + '.').PadRight(5, '0');
+        str = str[..5];
+        
+        string SOURCE = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
 
-    var bmp = Imaging.Utils.GetBitmap(SOURCE);
-    var data = Imaging.Utils.ExposeData(bmp);
-    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-    //sorter.AngleSort(x, sorter.FastSort(new PixelComparer.Ascending.Red._32bitUnion()));
-    sorter.AngleSort(x, sorter.InsertionSorter(new PixelComparer.Descending.Red._32bitUnion()));
-    bmp.Save(RESULT);
+        string RESULT = Path.GetFullPath(Path.Combine(
+                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+                $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
 
-    Console.WriteLine("Finish iteration " + x);
+        var bmp = Imaging.Utils.GetBitmap(SOURCE);
+        var data = Imaging.Utils.ExposeData(bmp);
+        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.AngleSort(x, sorter.PigeonSorter(new OrderedKeySelector.Descending.Red._32bitUnion()));
+        bmp.Save(RESULT);
+
+        watch.Stop();
+
+        Console.WriteLine($"[{(i++).ToString().PadLeft(2)}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {str} Radians in {watch.ElapsedMilliseconds} Milliseconds");
+    }
 }
 
-
-//new SortBenchmark() { size = 1920 }.Insertion();
-
+Rotate(24);
 
 //return;
 
-BenchmarkRunner.Run<SortBenchmark>();
+//BenchmarkRunner.Run<SortBenchmark>();
 
 //BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
