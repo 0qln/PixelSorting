@@ -54,6 +54,25 @@ namespace Sorting
             }
         }
 
+        public static void ShellSort(PixelSpan2D span, IComparer<TPixel> comparer)
+        {
+            for (int gapIndex = 0; gapIndex < SHELLSORT_GAPS.Length; gapIndex++)
+            {
+                for (int gap = SHELLSORT_GAPS[gapIndex], i = gap; i < span.ItemCount; i++)
+                {
+                    TPixel temp = span[i];
+                    int j = i;
+
+                    while ((j >= gap) && (comparer.Compare(temp, span[j - gap]) < 0))
+                    {
+                        span[j] = span[j - gap];
+                        j -= gap;
+                    }
+
+                    span[j] = temp;
+                }
+            }
+        }
 
         public static void ShellSort(PixelSpan span, IComparer<TPixel> comparer)
         {
