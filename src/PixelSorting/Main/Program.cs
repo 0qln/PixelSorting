@@ -18,6 +18,34 @@ using System.Diagnostics;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
+string RunThrough(double angle, int outPrecision = 6)
+{
+    string str = angle.ToString();
+    str = (str.Contains('.') ? str : str + '.').PadRight(outPrecision, '0');
+    str = str[..outPrecision];
+
+    string SOURCE = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+
+    string RESULT = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
+
+    var bmp = Imaging.Utils.GetBitmap(SOURCE);
+    var data = Imaging.Utils.ExposeData(bmp);
+    var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
+    sorter.AngleSort(angle, sorter.PigeonSorter(new OrderedKeySelector.Descending.Red._32bitUnion()));
+    bmp.Save(RESULT);
+
+    return str;
+}
+
+//for (double variance = 0.00000; variance < 0.00010; variance += 0.00001)
+//        RunThrough(0.7853 + variance, outPrecision: 7);
+
+RunThrough(0.7853981633974488, outPrecision: 30);
+
 void Rotate(int times)
 {
     int i = 1;
@@ -25,31 +53,20 @@ void Rotate(int times)
     {
         var watch = Stopwatch.StartNew();
 
-        string str = x.ToString();
-        str = (str.Contains('.') ? str : str + '.').PadRight(5, '0');
-        str = str[..5];
-        
-        string SOURCE = Path.GetFullPath(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-                $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
-
-        string RESULT = Path.GetFullPath(Path.Combine(
-                Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
-                $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
-
-        var bmp = Imaging.Utils.GetBitmap(SOURCE);
-        var data = Imaging.Utils.ExposeData(bmp);
-        var sorter = new Sorter<Pixel32bitUnion>(data.Scan0, data.Width, data.Height, data.Stride);
-        sorter.AngleSort(x, sorter.PigeonSorter(new OrderedKeySelector.Descending.Red._32bitUnion()));
-        bmp.Save(RESULT);
+        var angle = RunThrough(x, 12);
 
         watch.Stop();
 
-        Console.WriteLine($"[{(i++).ToString().PadLeft(2)}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {str} Radians in {watch.ElapsedMilliseconds} Milliseconds");
+        if (angle == "0.7853981633")
+        {
+            Console.WriteLine(x);
+        }
+
+        Console.WriteLine($"[{(i++).ToString().PadLeft(2)}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {angle} Radians in {watch.ElapsedMilliseconds} Milliseconds");
     }
 }
 
-Rotate(24);
+//Rotate(128);
 
 //return;
 
