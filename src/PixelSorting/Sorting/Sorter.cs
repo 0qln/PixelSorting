@@ -423,6 +423,18 @@ namespace Sorting
         }
 
 
+        public AngleSorter InsertionSorter(IComparer<TPixel> comparer)
+        {
+            void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
+            {
+                var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                InsertionSort(span, comparer);
+            }
+
+            return Sort;
+        }
+
+
         // Used for testing.
         internal void SortUnsafe(double alpha, IComparer<TPixel> comparer)
         {
