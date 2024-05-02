@@ -104,7 +104,7 @@ public class SortBenchmark
         sorter.SortUnsafe(Math.PI / 2, comparer);
     }
 
-    //[Benchmark]
+    [Benchmark]
     public void Safe()
     {
         source = Path.GetFullPath(Path.Combine(
@@ -196,24 +196,24 @@ public class SpanBenchmark
         Data = new Pixel32bitUnion[Width * Height];
     }
 
-    [Benchmark]
-    public void PixelSpan()
-    {
-        for (int i = 0; i < Height; i++)
-        {
-            int lo = i * Width;
-            new Sorter<Pixel32bitUnion>.PixelSpan(Data, 1, lo, lo + Width);
-        }
-    }
+    //[Benchmark]
+    //public void PixelSpan()
+    //{
+    //    for (int i = 0; i < Height; i++)
+    //    {
+    //        int lo = i * Width;
+    //        new Sorter<Pixel32bitUnion>.PixelSpan(Data, 1, lo, lo + Width);
+    //    }
+    //}
 
-    [Benchmark]
-    public void PixelSpan2D()
-    {
-        for (int i = 0; i < Height; i++)
-        {
-            new Sorter<Pixel32bitUnion>.PixelSpan2D(Data, Width, Height, 1, 0, 0, i);
-        }
-    }
+    //[Benchmark]
+    //public void PixelSpan2D()
+    //{
+    //    for (int i = 0; i < Height; i++)
+    //    {
+    //        new Sorter<Pixel32bitUnion>.PixelSpan2D(Data, Width, Height, 1, 0, 0, i);
+    //    }
+    //}
 
     #endregion
 

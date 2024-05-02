@@ -376,9 +376,10 @@ namespace Sorting
             Debug.Assert(baseA(theta) == _imageWidth);
 
             // Local function to shorten syntax.
+            nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
             void Sort(double ustep, double vstep, int uoff, int voff)
             {
-                var span = new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
                 CombSort(span, comparer, pureness);
             }
 
@@ -466,9 +467,10 @@ namespace Sorting
             Debug.Assert(baseA(theta) == _imageWidth);
 
             // Local function to shorten syntax.
+            nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
             void Sort(double ustep, double vstep, int uoff, int voff)
             {
-                var span = new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
+                var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
                 ShellSort(span, comparer, 0, span.ItemCount, pureness);
             }
 
@@ -635,9 +637,10 @@ namespace Sorting
             Debug.Assert(baseA(theta) == _imageWidth);
 
             // Local function to shorten syntax.
+            nint[] indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
             void Sort(double ustep, double vstep, int uoff, int voff)
                 => IntrospectiveSort(
-                        new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
+                        new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
                         comparer);
 
             // store the result of tan alpha, becuase it is used often.

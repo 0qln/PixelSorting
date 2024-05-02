@@ -17,7 +17,7 @@ namespace Sorting
         public readonly ref struct PixelSpan2D
         {
             /// <summary>A byref or a native ptr.</summary>
-            internal readonly ref TPixel _reference;
+            private readonly ref TPixel _reference;
             /// <summary>The side length 1.</summary>
             private readonly int _sizeU;
             /// <summary>The side length 2.</summary>
@@ -28,77 +28,68 @@ namespace Sorting
             private readonly double _stepU, _stepV;
             private readonly int _offU, _offV;
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="reference"></param>
-            /// <param name="maxU">The first side length.</param>
-            /// <param name="maxV">The second side length.</param>
-            public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            private readonly ref nint _indexerReference;
+
+
+            public PixelSpan2D(ref TPixel reference, nint[] indeces, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             {
-                _reference = ref reference[0];
+                // The buffer to store the index map is maintained by the caller, allocating a new buffer
+                // for each span creates to much overhead.
+                // The fast estimate is sometimes inaccurate => add buffer.
+                if (indeces.Length <= FastEstimateItemCount() + 1)
+                {
+                    throw new ArgumentException(nameof(indeces));
+                }
+
+                _reference = ref reference;
                 _sizeU = maxU;
                 _sizeV = maxV;
                 _stepU = stepU;
                 _stepV = stepV;
                 _offU = offU;
                 _offV = offV;
-                _itemCount = FastEstimateItemCount();
+                _indexerReference = ref indeces[0];
+
+                // Calculate exact index mappings.
+                // TODO: maybe speed up the bounds check using `FastEstimateItemCount`,
+                // if it can be made accurate enough.
+                int i = 0;
+                double u = _offU, v = _offV;
+                while (u < SizeU && v < SizeV && u >= 0 && v >= 0)
+                {
+                    // Inlining the span access on the `indeces` array.
+                    // We shouldn't get a AccessViolation here, as we checked earlier, that the index map is big enough.
+                    Debug.Assert(i < indeces.Length);
+                    ref nint index = ref Unsafe.Add(ref _indexerReference, (nint)(uint)i++);
+                    index = (int)u + (int)v * SizeU;
+                    u += StepU;
+                    v += StepV;
+                }
+
+                _itemCount = i;
             }
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="reference"></param>
-            /// <param name="maxU">The first side length.</param>
-            /// <param name="maxV">The second side length.</param>
-            public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+
+            public PixelSpan2D(TPixel[] reference, nint[] indeces, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+                : this(ref reference[0], indeces, maxU, maxV, stepU, stepV, offU, offV)
             {
-                _reference = ref reference[0];
-                _sizeU = maxU;
-                _sizeV = maxV;
-                _stepU = stepU;
-                _stepV = stepV;
-                _offU = offU;
-                _offV = offV;
-                _itemCount = FastEstimateItemCount();
             }
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="reference"></param>
-            /// <param name="maxU">The first side length.</param>
-            /// <param name="maxV">The second side length.</param>
-            public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            public PixelSpan2D(Span<TPixel> reference, nint[] indeces, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+                : this(ref reference[0], indeces, maxU, maxV, stepU, stepV, offU, offV)
             {
-                _reference = ref *((TPixel*)pointer);
-                _sizeU = maxU;
-                _sizeV = maxV;
-                _stepU = stepU;
-                _stepV = stepV;
-                _offU = offU;
-                _offV = offV;
-                _itemCount = FastEstimateItemCount();
             }
 
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="reference"></param>
-            /// <param name="maxU">The first side length.</param>
-            /// <param name="maxV">The second side length.</param>
-            public PixelSpan2D(nint pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            public PixelSpan2D(void* pointer, nint[] indeces, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+                : this(ref *((TPixel*)pointer), indeces, maxU, maxV, stepU, stepV, offU, offV)
             {
-                _reference = ref *((TPixel*)pointer);
-                _sizeU = maxU;
-                _sizeV = maxV;
-                _stepU = stepU;
-                _stepV = stepV;
-                _offU = offU;
-                _offV = offV;
-                _itemCount = FastEstimateItemCount();
             }
+
+            public PixelSpan2D(nint pointer, nint[] indeces, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+                : this(ref *((TPixel*)pointer), indeces, maxU, maxV, stepU, stepV, offU, offV)
+            {
+            }
+
 
             /// <summary>
             /// Prone to floating point inaccuracy;
@@ -171,47 +162,28 @@ namespace Sorting
                     if (i >= _itemCount || i < 0)
                         throw new IndexOutOfRangeException();
 
-                    int u = (int)(i * _stepU) + _offU;
-                    int v = (int)(i * _stepV) + _offV;
-
-                    int index = u + v * _sizeU;
-
-                    return ref Unsafe.Add(ref _reference, (nint)(uint)(index));
+                    return ref
+                        Unsafe.Add(ref _reference,
+                            // Map the input index to the 2D array
+                            Unsafe.Add(ref _indexerReference, (nint)(uint)i)
+                        );
                 }
             }
 
             /// <summary>
             /// The total number of items that the span operates on.
             /// </summary>
-            public int ItemCount
-            {
-                get
-                {
-                    return _itemCount;
-                }
-            }
+            public int ItemCount => _itemCount;
 
             /// <summary>
             /// The size of the side indexed by u.
             /// </summary>
-            public int SizeU
-            {
-                get
-                {
-                    return _sizeU;
-                }
-            }
+            public int SizeU => _sizeU;
 
             /// <summary>
             /// The size of the side indexed by v.
             /// </summary>
-            public int SizeV
-            {
-                get
-                {
-                    return _sizeV;
-                }
-            }
+            public int SizeV => _sizeV;
 
             /// <summary>
             /// The step that each index takes in direction u.
@@ -301,6 +273,7 @@ namespace Sorting
                 StepU = stepU;
                 StepV = stepV;
                 OffU = offU;
+                OffV = offV;
                 _indexerReference = ref indeces[0];
                 ItemCount = FillIndexMap();
             }
