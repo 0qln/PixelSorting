@@ -1,7 +1,6 @@
-﻿namespace Sorting.Pixels._8
+﻿namespace Sorting.Pixels._8;
+
+public struct Pixel8bit
 {
-    public struct Pixel8bit
-    {
-        public byte Value;
-    }
+    public byte Value;
 }

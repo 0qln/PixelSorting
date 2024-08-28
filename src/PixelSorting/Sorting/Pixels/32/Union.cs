@@ -1,76 +1,75 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Sorting.Pixels._32
+namespace Sorting.Pixels._32;
+
+/// <summary>
+/// Trying to get the best from both worlds, speed of handling as `Int32`, and quick
+/// pixel property (e.g. r,g,b) access from using as single byte.
+/// Benchmarks show this seems to be slightly superior.
+/// </summary>
+[StructLayout(LayoutKind.Explicit)]
+public struct Pixel32bitUnion
 {
-    /// <summary>
-    /// Trying to get the best from both worlds, speed of handling as `Int32`, and quick
-    /// pixel property (e.g. r,g,b) access from using as single byte.
-    /// Benchmarks show this seems to be slightly superior.
-    /// </summary>
-    [StructLayout(LayoutKind.Explicit)]
-    public struct Pixel32bitUnion
-    {
-        [FieldOffset(0)] public int Int;
-        [FieldOffset(0)] public byte B;
-        [FieldOffset(1)] public byte G;
-        [FieldOffset(2)] public byte R;
-        [FieldOffset(3)] public byte A;
+    [FieldOffset(0)] public int Int;
+    [FieldOffset(0)] public byte B;
+    [FieldOffset(1)] public byte G;
+    [FieldOffset(2)] public byte R;
+    [FieldOffset(3)] public byte A;
         
-        public int GrayScale()
+    public readonly int GrayScale()
+    {
+        return (R + G + B) / 3;
+    }
+
+    /// <summary>
+    /// Calculate the hue of this pixel.
+    /// </summary>
+    /// <returns></returns>
+    public float GetHue()
+    {
+        if (R == G && G == B)
+            return 0f;
+
+        MinMaxRgb(out var min, out var max);
+
+        float delta = max - min;
+        float hue;
+
+        if (R == max)
+            hue = (G - B) / delta;
+        else if (G == max)
+            hue = (B - R) / delta + 2f;
+        else
+            hue = (R - G) / delta + 4f;
+
+        hue *= 60f;
+        if (hue < 0f)
+            hue += 360f;
+
+        return hue;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private readonly void MinMaxRgb(out int min, out int max)
+    {
+        if (R > G)
         {
-            return (R + G + B) / 3;
+            max = R;
+            min = G;
         }
-
-        /// <summary>
-        /// Calculate the hue of this pixel.
-        /// </summary>
-        /// <returns></returns>
-        public float GetHue()
+        else
         {
-            if (R == G && G == B)
-                return 0f;
-
-            MinMaxRgb(out int min, out int max);
-
-            float delta = max - min;
-            float hue;
-
-            if (R == max)
-                hue = (G - B) / delta;
-            else if (G == max)
-                hue = (B - R) / delta + 2f;
-            else
-                hue = (R - G) / delta + 4f;
-
-            hue *= 60f;
-            if (hue < 0f)
-                hue += 360f;
-
-            return hue;
+            max = G;
+            min = R;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void MinMaxRgb(out int min, out int max)
+        if (B > max)
         {
-            if (R > G)
-            {
-                max = R;
-                min = G;
-            }
-            else
-            {
-                max = G;
-                min = R;
-            }
-            if (B > max)
-            {
-                max = B;
-            }
-            else if (B < min)
-            {
-                min = B;
-            }
+            max = B;
+        }
+        else if (B < min)
+        {
+            min = B;
         }
     }
 }

@@ -1,31 +1,30 @@
-﻿namespace Sorting
+﻿namespace Sorting;
+
+public enum SortDirection
 {
-    public enum SortDirection
-    {
-        Horizontal, Vertical
-    }
+    Horizontal, Vertical
+}
 
-    public enum SortOrder
-    {
-        Ascending, Descending
-    }
+public enum SortOrder
+{
+    Ascending, Descending
+}
 
-    //public enum SortDirection
-    //{
-    //    North = 8, 
-    //    East = -1,
-    //    South = -8, 
-    //    West = 1,
+//public enum SortDirection
+//{
+//    North = 8, 
+//    East = -1,
+//    South = -8, 
+//    West = 1,
 
-    //    NorthEast = North + East,
-    //    SouthEast = South + East,
-    //    NorthWest = North + West,
-    //    SouthWest = South + West,
-    //}
+//    NorthEast = North + East,
+//    SouthEast = South + East,
+//    NorthWest = North + West,
+//    SouthWest = South + West,
+//}
 
-    public enum SortType
-    {
-        Red, Green, Blue,
-        Hue, Saturation, Luminocity
-    }
+public enum SortType
+{
+    Red, Green, Blue,
+    Hue, Saturation, Luminocity
 }
