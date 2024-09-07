@@ -5,11 +5,6 @@ namespace Sorting;
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
-    public interface ISorter
-    {
-        public void Sort(PixelSpan2D span);
-    }
-
     public class PigeonholeSorter : ISorter
     {
         private readonly IOrderedKeySelector<TPixel> _selector;
@@ -51,6 +46,11 @@ public partial class Sorter<TPixel>
             {
                 _auxilary[hole].Clear();
             }
+        }
+
+        public object Clone()
+        {
+            return new PigeonholeSorter((IOrderedKeySelector<TPixel>)_selector.Clone());
         }
     }
 }

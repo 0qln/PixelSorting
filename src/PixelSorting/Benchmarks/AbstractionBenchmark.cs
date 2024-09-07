@@ -13,7 +13,7 @@ public class AbstractionBenchmark
         public unsafe void ComparerStruct()
         {
             var data = Data[0];
-            var comparer = new PixelComparer.Ascending.RedStruct();
+            // var comparer = new PixelComparer.Ascending.RedStruct();
             var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
             // sorter.SortAngle(Math.PI / 2, sorter.GetAngleSorterInfo<IComparer<Pixel32bitUnion>>(Sorter32Bit.IntrospectiveSort, comparer));
         }

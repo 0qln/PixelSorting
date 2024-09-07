@@ -1,10 +1,24 @@
 ﻿using System.Diagnostics;
+using Sorting.Pixels;
 
 namespace Sorting;
 
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
+    public readonly struct InsertionSorter(IPixelComparer<TPixel> comparer) : ISorter
+    {
+        public object Clone()
+        {
+            return new InsertionSorter((IPixelComparer<TPixel>)comparer.Clone());
+        }
+
+        public void Sort(PixelSpan2D span)
+        {
+            InsertionSort(span, comparer);
+        }
+    }
+
     /// <summary></summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="span"></param>
@@ -93,6 +107,7 @@ public partial class Sorter<TPixel>
             while (j >= lo && comparer.Compare(t, span[j]) < 0)
             {
                 span[j + 1] = span[j];
+                if (j == 0) break;
                 --j;
             }
 

@@ -5,6 +5,7 @@ using System.Reflection;
 using Sorting.Pixels.KeySelector;
 using System.Diagnostics;
 using Sorting.Pixels._32;
+using Sorting.Pixels.Comparer;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
@@ -54,12 +55,13 @@ unsafe void Rotate(int times)
 
         var bmp = Imaging.Utils.GetBitmap(source);
         var data = Imaging.Utils.ExposeData(bmp);
-        Console.Write($"Loaded in {watch.ElapsedMilliseconds}ms, ");
+        Console.Write($"Loaded after {watch.ElapsedMilliseconds}ms, ");
         var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
-        Console.Write($"Sorted in {watch.ElapsedMilliseconds}ms, ");
+        // sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
+        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
+        Console.Write($"Sorted after {watch.ElapsedMilliseconds}ms, ");
         bmp.Save(result);
-        Console.Write($"Saved in {watch.ElapsedMilliseconds}ms ");
+        Console.Write($"Saved after {watch.ElapsedMilliseconds}ms ");
         var angle = str;
 
         watch.Stop();
@@ -68,7 +70,8 @@ unsafe void Rotate(int times)
     }
 }
 
-Rotate(1024);
+// Rotate(1024);
+Rotate(20);
 
 
 #pragma warning restore CA1416 // Validate platform compatibility

@@ -1,10 +1,24 @@
 ﻿using System.Runtime.CompilerServices;
+using Sorting.Pixels;
 
 namespace Sorting;
 
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
+    public class IntrospectiveSorter(IPixelComparer<TPixel> comparer) : ISorter
+    {
+        public object Clone()
+        {
+            return new IntrospectiveSorter((IPixelComparer<TPixel>)comparer.Clone());
+        }
+
+        public void Sort(PixelSpan2D span)
+        {
+            IntrospectiveSort(span, comparer);
+        }
+    }
+
     // This is the threshold where Introspective sort switches to Insertion sort.
     // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
     // Large value types may benefit from a smaller number.

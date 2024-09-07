@@ -2,7 +2,7 @@
 
 namespace Sorting.Pixels.KeySelector;
 
-public interface IOrderedKeySelector<in TPixel>
+public interface IOrderedKeySelector<in TPixel> : ICloneable
     where TPixel : struct
 {
     public int GetKey(TPixel value);
@@ -18,15 +18,11 @@ public abstract class OrderedKeySelector
     {
         public class Red : IOrderedKeySelector<Pixel32bitUnion>
         {
-            public int GetCardinality()
-            {
-                return 256;
-            }
+            public int GetCardinality() => 256;
 
-            public int GetKey(Pixel32bitUnion value)
-            {
-                return value.R;
-            }
+            public int GetKey(Pixel32bitUnion value) => value.R;
+
+            public object Clone() => new Red();
         }
     }
 
@@ -34,15 +30,11 @@ public abstract class OrderedKeySelector
     {
         public class Red : IOrderedKeySelector<Pixel32bitUnion>
         {
-            public int GetCardinality()
-            {
-                return 256;
-            }
+            public int GetCardinality() => 256;
 
-            public int GetKey(Pixel32bitUnion value)
-            {
-                return 255 - value.R;
-            }
+            public int GetKey(Pixel32bitUnion value) => 255 - value.R;
+
+            public object Clone() => new Red();
         }
     }
 }

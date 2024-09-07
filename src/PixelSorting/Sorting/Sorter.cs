@@ -7,26 +7,22 @@ using Sorting.Pixels.KeySelector;
 
 namespace Sorting;
 
-
 public unsafe class Sorter32Bit(Pixel32bitUnion* byteDataBegin, int width, int height, int stride)
     : Sorter<Pixel32bitUnion>(byteDataBegin, width, height, stride);
-
 
 public unsafe class Sorter8Bit(Pixel8bit* byteDataBegin, int width, int height, int stride)
     : Sorter<Pixel8bit>(byteDataBegin, width, height, stride);
 
-
 // TODO: more overloads
-
-
-
 
 public unsafe partial class Sorter<TPixel>
     where TPixel : struct
 {
+    // TODO: unit test that each angle of pixels does not overlap any other when iterating.
+
     // Using closures and delegates at this stage would be nice, but they 
     // only use SHO, as the closure object is generated at compile time.
-    public readonly ref struct AngleSorterInfo
+    public readonly struct AngleSorterInfo : ICloneable
     {
         public ISorter Sorter { get; init; }
 
@@ -37,10 +33,15 @@ public unsafe partial class Sorter<TPixel>
         public int ImageHeight { get; init; }
 
 
-        public void Sort(double uStep, double vStep, int uOff, int vOff)
+        public AngleSorterInfo Sort(double uStep, double vStep, int uOff, int vOff)
         {
             Sorter.Sort(new PixelSpan2D(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff));
+            return this;
         }
+
+        object ICloneable.Clone() => Clone();
+
+        public AngleSorterInfo Clone() => this with { Sorter = (ISorter)Sorter.Clone() };
     }
 
     public AngleSorterInfo GetAngleSorterInfo(ISorter sorter)
@@ -60,6 +61,11 @@ public unsafe partial class Sorter<TPixel>
     // Safety: C# forces the data to be pinned before taking the address of it.
     private readonly TPixel* _pixels;
     private readonly int _pixelCount;
+
+    /// <summary>
+    /// The parallelization options.
+    /// </summary>
+    public ParallelOptions ParallelOpts { get; set; } = new() { MaxDegreeOfParallelism = -1 };
 
 
     /// <summary>
@@ -86,7 +92,8 @@ public unsafe partial class Sorter<TPixel>
     }
 
 
-    public bool NextRowPixelSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorX, Span<TPixel> pixels)
+    public bool NextRowPixelSpan(int y, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span,
+        ref int iteratorX, Span<TPixel> pixels)
     {
         // Remember where we started.
         var begin = iteratorX;
@@ -121,7 +128,8 @@ public unsafe partial class Sorter<TPixel>
         return true;
     }
 
-    public bool NextColPixelSpan(int x, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span, ref int iteratorY, Span<TPixel> pixels)
+    public bool NextColPixelSpan(int x, IComparer<TPixel> comparer, TPixel threshhold, out PixelSpan span,
+        ref int iteratorY, Span<TPixel> pixels)
     {
         // Remember where we started
         var begin = iteratorY;
@@ -175,6 +183,7 @@ public unsafe partial class Sorter<TPixel>
                 {
                     IntrospectiveSort(GetRowPixelSpan(row), comparer);
                 }
+
                 break;
 
             case SortDirection.Vertical:
@@ -182,6 +191,7 @@ public unsafe partial class Sorter<TPixel>
                 {
                     IntrospectiveSort(GetColPixelSpan(col), comparer);
                 }
+
                 break;
         }
     }
@@ -209,71 +219,64 @@ public unsafe partial class Sorter<TPixel>
         Debug.Assert(Math.Abs(BaseA(theta) - _imageWidth) < 0.000001);
 #endif
 
-        // store the result of tan alpha, because it is used often.
         var tanAlpha = Math.Tan(alpha);
 
         switch (alpha)
         {
             case 0:
             {
-                for (var i = 0; i < _imageWidth; i++)
-                    sorterInfo.Sort(0, 1, i, 0);
+                Parallel.For( 0, _imageWidth, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0), Noop);
                 break;
             }
             case > 0 and < Math.PI / 2:
             {
+                // left
+                Parallel.For( 0, _imageHeight, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, 0, i), Noop);
+
                 // top
                 if (alpha > Math.PI / 4)
                 {
-                    for (var i = 0; i < _imageWidth; i++)
-                        sorterInfo.Sort(1, 1 / tanAlpha, i, 0);
+                    Parallel.For( 0, _imageWidth, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, i, 0), Noop);
                 }
                 else
                 {
-                    for (var i = 0; i < _imageWidth; i++)
-                        sorterInfo.Sort(tanAlpha, 1, i, 0);
+                    Parallel.For( 0, _imageWidth, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i, 0), Noop);
                 }
 
-                // left
-                for (var i = 0; i < _imageHeight; i++)
-                    sorterInfo.Sort(1, 1 / tanAlpha, 0, i);
                 break;
             }
             case Math.PI / 2:
             {
-                for (var i = 0; i < _imageHeight; i++)
-                    sorterInfo.Sort(1, 0, 0, i);
+                Parallel.For( 0, _imageHeight, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 0, 0, i), Noop);
                 break;
             }
             case > Math.PI / 2 and < Math.PI:
             {
                 // top
-                for (var i = 0; i < _imageWidth; i++)
-                {
-                    sorterInfo.Sort(tanAlpha, 1, i, 0);
-                }
+                Parallel.For( 0, _imageWidth, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i, 0), Noop);
 
                 // right
                 if (alpha > Math.PI / 2 + Math.PI / 4)
                 {
-                    for (var i = 0; i < _imageHeight; i++)
-                        sorterInfo.Sort(tanAlpha, 1, _imageWidth - 1, i);
+                    Parallel.For( 0, _imageHeight, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, _imageWidth - 1, i), Noop);
                 }
                 else
                 {
-                    for (var i = 0; i < _imageHeight; i++)
-                        sorterInfo.Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
+                    Parallel.For( 0, _imageHeight, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, -1 / tanAlpha, _imageWidth - 1, i), Noop);
                 }
 
                 break;
             }
             case Math.PI:
             {
-                for (var i = 0; i < _imageWidth; i++)
-                    sorterInfo.Sort(0, 1, i, 0);
+                Parallel.For( 0, _imageWidth, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0), Noop);
                 break;
             }
         }
+
+        return;
+
+        static void Noop(AngleSorterInfo sorterInfo) { }
     }
 
 
@@ -285,6 +288,7 @@ public unsafe partial class Sorter<TPixel>
 
         // Local function to shorten syntax.
         var indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
+
         void Sort(double ustep, double vstep, int uoff, int voff)
             => IntrospectiveSort(
                 new UnsafePixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
@@ -349,6 +353,7 @@ public unsafe partial class Sorter<TPixel>
 
         // Local function to shorten syntax.
         var indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
+
         void Sort(double ustep, double vstep, int uoff, int voff)
             => IntrospectiveSort(
                 new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
@@ -424,6 +429,7 @@ public unsafe partial class Sorter<TPixel>
                         IntrospectiveSort(span, comparer);
                     }
                 }
+
                 break;
 
             case SortDirection.Vertical:
@@ -440,6 +446,7 @@ public unsafe partial class Sorter<TPixel>
                         IntrospectiveSort(span, comparer);
                     }
                 }
+
                 break;
         }
     }
