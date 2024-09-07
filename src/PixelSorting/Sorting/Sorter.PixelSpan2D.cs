@@ -37,7 +37,9 @@ public unsafe partial class Sorter<TPixel>
 
         private readonly int _offU, _offV;
 
+#if LEGACY_BENCHMARKING
         private readonly ref nint _indexerRef;
+#endif
 
 
         /// <summary>
@@ -68,7 +70,7 @@ public unsafe partial class Sorter<TPixel>
         public double StepV => _stepV;
 
 
-        public PixelSpan2D(ref TPixel reference, nint[] indices, int maxU, int maxV, double stepU, double stepV,
+        public PixelSpan2D(ref TPixel reference, int maxU, int maxV, double stepU, double stepV,
             int offU, int offV)
         {
             Debug.Assert(maxU != 0 && maxV != 0);
@@ -86,32 +88,10 @@ public unsafe partial class Sorter<TPixel>
             _stepV = stepV / max;
 
             _itemCount = EstimateItemCount();
-
-            // The buffer to store the index map is owned by the caller, allocating a new buffer
-            // for each span creates too much overhead.
-            Debug.Assert(indices.Length >= _itemCount);
-
             _reference = ref reference;
-            _indexerRef = ref indices[0];
-            
-            // Calculate exact index mappings.
-            // TODO: Can be optimized by storing the item count from last sort iteration's span and updating it each time a new span is created.
-            // TODO: Benchmark whether it is faster precompute the indices or calculate them during runtime.
-            // double u = _offU, v = _offV;
-            // nint i = 0;
-            // while (i < _itemCount)
-            // {
-            //     // Inlining the span access on the `indices` array. Skip the bounds check.
-            //     // We shouldn't get a AccessViolation here, as we checked earlier, that the index map is big enough.
-            //     Debug.Assert(i < indices.Length);
-            //     ref var index = ref Unsafe.Add(ref _indexerRef, i++);
-            //     index = (int)u + (int)v * SizeU;
-            //
-            //     u += _stepU;
-            //     v += _stepV;
-            // }
         }
-        
+
+#if LEGACY_BENCHMARKING
         [Obsolete("This exists for benchmarking purposes.")]
         public PixelSpan2D(ref TPixel reference, nint[] indices, int maxU, int maxV, double stepU, double stepV,
             int offU, int offV, bool LEGACY)
@@ -155,21 +135,22 @@ public unsafe partial class Sorter<TPixel>
 
             _itemCount = (uint)i;
         }
+#endif
 
-        public PixelSpan2D(TPixel[] reference, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
-            : this(ref reference[0], indices, maxU, maxV, stepU, stepV, offU, offV)
+        public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            : this(ref reference[0], maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
 
 #if DEBUG
         public PixelSpan2D(
-            TPixel[] reference, nint[] indices, 
+            TPixel[] reference, 
             int maxU, int maxV, 
             Fraction fStepU, Fraction fStepV, 
             int offU, int offV)
             : this(
-                ref reference[0], indices,
+                ref reference[0],
                 maxU, maxV, 
                 (double)fStepU, 
                 (double)fStepV, 
@@ -184,18 +165,18 @@ public unsafe partial class Sorter<TPixel>
         }
 #endif
 
-        public PixelSpan2D(Span<TPixel> reference, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
-            : this(ref reference[0], indices, maxU, maxV, stepU, stepV, offU, offV)
+        public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            : this(ref reference[0], maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(void* pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
-            : this(ref *((TPixel*)pointer), indices, maxU, maxV, stepU, stepV, offU, offV)
+        public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            : this(ref *((TPixel*)pointer), maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(nint pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
-            : this(ref *((TPixel*)pointer), indices, maxU, maxV, stepU, stepV, offU, offV)
+        public PixelSpan2D(nint pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+            : this(ref *((TPixel*)pointer), maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
@@ -267,11 +248,7 @@ public unsafe partial class Sorter<TPixel>
                 if (i >= _itemCount)
                     throw new IndexOutOfRangeException();
 
-                return ref
-                    Unsafe.Add(ref _reference,
-                        // Map the input index to the 2D array
-                        Unsafe.Add(ref _indexerRef, (nint)i)
-                    );
+                return ref Unsafe.Add(ref _reference, MapIndex(i) );
             }
         }
 
@@ -285,10 +262,15 @@ public unsafe partial class Sorter<TPixel>
             return (int)u + (int)v * _sizeU;
         }
 
+        [Obsolete("Index caching shows not performance improvements.")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint LookupIndex(uint i)
         {
+#if LEGACY_BENCHMARKING
             return Unsafe.Add(ref _indexerRef, (nint)i);
+#else
+            return 0;
+#endif
         }
     }
 

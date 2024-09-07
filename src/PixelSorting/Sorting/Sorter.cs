@@ -19,12 +19,42 @@ public unsafe class Sorter8Bit(Pixel8bit* byteDataBegin, int width, int height, 
 // TODO: more overloads
 
 
-public delegate void AngleSorter(double ustep, double vstep, int uoff, int voff, nint[] indeces);
 
 
 public unsafe partial class Sorter<TPixel>
     where TPixel : struct
 {
+    // Using closures and delegates at this stage would be nice, but they 
+    // only use SHO, as the closure object is generated at compile time.
+    public readonly ref struct AngleSorterInfo
+    {
+        public ISorter Sorter { get; init; }
+
+        public TPixel* Pixels { get; init; }
+
+        public int ImageWidth { get; init; }
+
+        public int ImageHeight { get; init; }
+
+
+        public void Sort(double uStep, double vStep, int uOff, int vOff)
+        {
+            Sorter.Sort(new PixelSpan2D(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff));
+        }
+    }
+
+    public AngleSorterInfo GetAngleSorterInfo(ISorter sorter)
+    {
+        return new AngleSorterInfo
+        {
+            Sorter = sorter,
+            Pixels = _pixels,
+            ImageWidth = _imageWidth,
+            ImageHeight = _imageHeight
+        };
+    }
+
+
     private readonly int _imageWidth, _imageHeight;
 
     // Safety: C# forces the data to be pinned before taking the address of it.
@@ -35,7 +65,7 @@ public unsafe partial class Sorter<TPixel>
     /// <summary>
     /// Initialize a Sorter.
     /// </summary>
-    /// <param name="byteDataBegin">The adress of the first byte of the image data.</param>
+    /// <param name="byteDataBegin">The address of the first byte of the image data.</param>
     /// <param name="height">The height of the image in pixels.</param>
     /// <param name="width">The width of the image in pixels.</param>
     /// <param name="stride">The width of the image in bytes.</param>
@@ -163,23 +193,23 @@ public unsafe partial class Sorter<TPixel>
     ///     alpha(PI) ~ Vertical. 
     /// </summary>
     /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-    /// <param name="sorter">The sort function.</param>
-    public void SortAngle(double alpha, AngleSorter sorter)
+    /// <param name="sorterInfo">The sort function.</param>
+    public void SortAngle(double alpha, AngleSorterInfo sorterInfo)
     {
         // the diagonal of the pixel-rect.
         var c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
 
+#if DEBUG
         // the base length of the triangle formed by alpha + pixel-rect height.
-        double baseA(double angle) => c * Math.Sin(angle);
+        double BaseA(double angle) => c * Math.Sin(angle);
 
         // the angle of the diagonal of the pixel-rect. 
         var theta = Math.Asin(_imageWidth / c);
-        Debug.Assert(baseA(theta) == _imageWidth);
 
-        // Local function to shorten syntax.
-        var indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
+        Debug.Assert(Math.Abs(BaseA(theta) - _imageWidth) < 0.000001);
+#endif
 
-        // store the result of tan alpha, becuase it is used often.
+        // store the result of tan alpha, because it is used often.
         var tanAlpha = Math.Tan(alpha);
 
         switch (alpha)
@@ -187,7 +217,7 @@ public unsafe partial class Sorter<TPixel>
             case 0:
             {
                 for (var i = 0; i < _imageWidth; i++)
-                    sorter(0, 1, i, 0, indeces);
+                    sorterInfo.Sort(0, 1, i, 0);
                 break;
             }
             case > 0 and < Math.PI / 2:
@@ -196,23 +226,23 @@ public unsafe partial class Sorter<TPixel>
                 if (alpha > Math.PI / 4)
                 {
                     for (var i = 0; i < _imageWidth; i++)
-                        sorter(1, 1 / tanAlpha, i, 0, indeces);
+                        sorterInfo.Sort(1, 1 / tanAlpha, i, 0);
                 }
                 else
                 {
                     for (var i = 0; i < _imageWidth; i++)
-                        sorter(tanAlpha, 1, i, 0, indeces);
+                        sorterInfo.Sort(tanAlpha, 1, i, 0);
                 }
 
                 // left
                 for (var i = 0; i < _imageHeight; i++)
-                    sorter(1, 1 / tanAlpha, 0, i, indeces);
+                    sorterInfo.Sort(1, 1 / tanAlpha, 0, i);
                 break;
             }
             case Math.PI / 2:
             {
                 for (var i = 0; i < _imageHeight; i++)
-                    sorter(1, 0, 0, i, indeces);
+                    sorterInfo.Sort(1, 0, 0, i);
                 break;
             }
             case > Math.PI / 2 and < Math.PI:
@@ -220,19 +250,19 @@ public unsafe partial class Sorter<TPixel>
                 // top
                 for (var i = 0; i < _imageWidth; i++)
                 {
-                    sorter(tanAlpha, 1, i, 0, indeces);
+                    sorterInfo.Sort(tanAlpha, 1, i, 0);
                 }
 
                 // right
                 if (alpha > Math.PI / 2 + Math.PI / 4)
                 {
                     for (var i = 0; i < _imageHeight; i++)
-                        sorter(tanAlpha, 1, _imageWidth - 1, i, indeces);
+                        sorterInfo.Sort(tanAlpha, 1, _imageWidth - 1, i);
                 }
                 else
                 {
                     for (var i = 0; i < _imageHeight; i++)
-                        sorter(-1, -1 / tanAlpha, _imageWidth - 1, i, indeces);
+                        sorterInfo.Sort(-1, -1 / tanAlpha, _imageWidth - 1, i);
                 }
 
                 break;
@@ -240,92 +270,10 @@ public unsafe partial class Sorter<TPixel>
             case Math.PI:
             {
                 for (var i = 0; i < _imageWidth; i++)
-                    sorter(0, 1, i, 0, indeces);
+                    sorterInfo.Sort(0, 1, i, 0);
                 break;
             }
         }
-    }
-
-
-    /// <summary>
-    /// Create a comb sorter.
-    /// </summary>
-    /// <param name="comparer"></param>
-    /// <param name="pureness"></param>
-    /// <returns></returns>
-    public AngleSorter CombSort(IComparer<TPixel> comparer, int pureness)
-    {
-        void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
-        {
-            var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
-            CombSort(span, comparer, pureness);
-        }
-
-        return Sort;
-    }
-
-
-    /// <summary>
-    /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
-    ///     alpha(0) ~ Vertical, 
-    ///     alpha(PI / 2) ~ Horizontal, 
-    ///     alpha(PI) ~ Vertical. 
-    /// </summary>
-    /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-    /// <param name="comparer">The comparer that is used to compare the pixels</param>
-    public AngleSorter ShellSort(IComparer<TPixel> comparer, int pureness)
-    {
-        void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
-        {
-            var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
-            ShellSort(span, comparer, 0, span.ItemCount, pureness);
-        }
-
-        return Sort;
-    }
-
-
-    /// <summary>
-    /// Sort the image using the specified <paramref name="comparer"/> rotated clockwise towards the angle <paramref name="alpha"/>, where: 
-    ///     alpha(0) ~ Vertical, 
-    ///     alpha(PI / 2) ~ Horizontal, 
-    ///     alpha(PI) ~ Vertical. 
-    /// </summary>
-    /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-    /// <param name="comparer">The comparer that is used to compare the pixels</param>
-    public AngleSorter FastSort(IComparer<TPixel> comparer)
-    {
-        void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
-        {
-            var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
-            IntrospectiveSort(span, comparer);
-        }
-
-        return Sort;
-    }
-
-
-    public AngleSorter PigeonSorter(IOrderedKeySelector<TPixel> selector)
-    {
-        void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
-        {
-            var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
-            PigeonholeSort(span, selector);
-        }
-
-        return Sort;
-    }
-
-
-    public AngleSorter InsertionSorter(IComparer<TPixel> comparer)
-    {
-        void Sort(double ustep, double vstep, int uoff, int voff, nint[] indeces)
-        {
-            var span = new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff);
-            InsertionSort(span, comparer);
-        }
-
-        return Sort;
     }
 
 
@@ -403,7 +351,7 @@ public unsafe partial class Sorter<TPixel>
         var indeces = new nint[(int)Math.Ceiling(c) + 1]; // longest diagonal will be the tangent
         void Sort(double ustep, double vstep, int uoff, int voff)
             => IntrospectiveSort(
-                new PixelSpan2D(_pixels, indeces, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
+                new PixelSpan2D(_pixels, _imageWidth, _imageHeight, ustep, vstep, uoff, voff),
                 comparer);
 
         // store the result of tan alpha, becuase it is used often.

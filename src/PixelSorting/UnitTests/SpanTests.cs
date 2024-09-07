@@ -109,9 +109,8 @@ public class SpanTests
         int offU, int offV)
     {
         var data = new Pixel32bitUnion[Math.Max(maxU * maxV, 1)];
-        var indices = new nint[maxU + maxV + 1];
         var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(
-            data, indices, maxU, maxV, 
+            data, maxU, maxV, 
             new Sorter<Pixel32bitUnion>.Fraction(numU, denU),
             new Sorter<Pixel32bitUnion>.Fraction(numV, denV), 
             offU, offV);
@@ -133,9 +132,8 @@ public class SpanTests
         int expected)
     {
         var data = new Pixel32bitUnion[Math.Max(maxU * maxV, 1)];
-        var indices = new nint[maxU + maxV + 1];
         var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(
-            data, indices, maxU, maxV, 
+            data, maxU, maxV, 
             new Sorter<Pixel32bitUnion>.Fraction(numU, denU),
             new Sorter<Pixel32bitUnion>.Fraction(numV, denV), 
             offU, offV);
@@ -148,9 +146,8 @@ public class SpanTests
     public void PixelSpan2D_Indexing()
     {
         var data = new Pixel32bitUnion[3840 * 2060];
-        var indices = new nint[3840 + 2060];
         var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(
-            data, indices, 3840, 2060, 1.1, 1.6, 0, 0);
+            data, 3840, 2060, 1.1, 1.6, 0, 0);
 
         for (uint i = 0; i < span.ItemCount; i++)
             Assert.Equal(span.MapIndex(i), span.LookupIndex(i));

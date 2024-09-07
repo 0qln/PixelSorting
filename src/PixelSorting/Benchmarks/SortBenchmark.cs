@@ -92,7 +92,7 @@ public class SortBenchmark
         {
             var data = Data[1];
             var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            sorter.SortAngle(Math.PI / 2, sorter.FastSort(Comparer));
+            // sorter.SortAngle(Math.PI / 2, sorter.GetAngleSorterInfo(Sorter32Bit.IntrospectiveSort, Comparer));
         }
 
     }
@@ -156,20 +156,17 @@ public class SortBenchmark
     private IOrderedKeySelector<Pixel32bitUnion> selector = new OrderedKeySelector.Descending.Red();
     private IComparer<Pixel32bitUnion> comparer = new PixelComparer.Descending.Red();
 
-    private nint[] indeces;
-
     private Random rng = new Random(857943);
 
 
     private Sorter<Pixel32bitUnion>.PixelSpan2D PrepareInput()
     {
         var test = Enumerable.Range(0, size).Select(x => new Pixel32bitUnion { Int = rng.Next() }).ToArray();
-        indeces = new nint[size];
-        return new Sorter<Pixel32bitUnion>.PixelSpan2D(test, indeces, size, 1, 1, 0, 0, 0);
+        return new Sorter<Pixel32bitUnion>.PixelSpan2D(test, size, 1, 1, 0, 0, 0);
     }
 
     [Benchmark] public void Intro() => Sorter<Pixel32bitUnion>.IntrospectiveSort(PrepareInput(), comparer);
-    [Benchmark] public void Pigeon() => Sorter<Pixel32bitUnion>.PigeonholeSort(PrepareInput(), selector);
+    [Benchmark] public void Pigeon() => new Sorter<Pixel32bitUnion>.PigeonholeSorter(selector).Sort(PrepareInput());
     [Benchmark] public void Heap() => Sorter<Pixel32bitUnion>.HeapSort(PrepareInput(), comparer);
     [Benchmark] public void Insertion() => Sorter<Pixel32bitUnion>.InsertionSort(PrepareInput(), comparer);
     [Benchmark] public void Comb() => Sorter<Pixel32bitUnion>.CombSort(PrepareInput(), comparer);

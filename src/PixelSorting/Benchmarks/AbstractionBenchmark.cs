@@ -15,7 +15,7 @@ public class AbstractionBenchmark
             var data = Data[0];
             var comparer = new PixelComparer.Ascending.RedStruct();
             var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            sorter.SortAngle(Math.PI / 2, sorter.FastSort(comparer));
+            // sorter.SortAngle(Math.PI / 2, sorter.GetAngleSorterInfo<IComparer<Pixel32bitUnion>>(Sorter32Bit.IntrospectiveSort, comparer));
         }
 
         [Benchmark]
@@ -24,7 +24,7 @@ public class AbstractionBenchmark
             var data = Data[1];
             var comparer = new PixelComparer.Ascending.Red();
             var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            sorter.SortAngle(Math.PI / 2, sorter.FastSort(comparer));
+            // sorter.SortAngle(Math.PI / 2, sorter.GetAngleSorterInfo(Sorter32Bit.IntrospectiveSort, comparer));
         }
     }
  

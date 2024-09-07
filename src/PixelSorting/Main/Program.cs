@@ -25,34 +25,50 @@ unsafe string RunThrough(double angle, int outPrecision = 6)
     var bmp = Imaging.Utils.GetBitmap(source);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortAngle(angle, sorter.PigeonSorter(new OrderedKeySelector.Descending.Red()));
+    sorter.SortAngle(angle, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
     bmp.Save(result);
 
     return str;
 }
 
-void Rotate(int times)
+unsafe void Rotate(int times)
 {
     var i = 1;
     for (var x = 0.0; x <= Math.PI; x += Math.PI / times)
     {
+        Console.Write($"[{i++,4}] ");
+
         var watch = Stopwatch.StartNew();
 
-        var angle = RunThrough(x, 30);
+        var str = x.ToString();
+        str = (str.Contains('.') ? str : str + '.').PadRight(30, '0');
+        str = str[..30];
+
+        var source = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-1920x1080.bmp"));
+
+        var result = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!,
+            $"../../../../../SampleImages/img_0/sample-image-RESULT-{str}.bmp"));
+
+        var bmp = Imaging.Utils.GetBitmap(source);
+        var data = Imaging.Utils.ExposeData(bmp);
+        Console.Write($"Loaded in {watch.ElapsedMilliseconds}ms, ");
+        var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
+        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
+        Console.Write($"Sorted in {watch.ElapsedMilliseconds}ms, ");
+        bmp.Save(result);
+        Console.Write($"Saved in {watch.ElapsedMilliseconds}ms ");
+        var angle = str;
 
         watch.Stop();
 
-        Console.WriteLine($"[{i++,4}] Loaded, sorted, and saved 'sample-image-1920x1080.bmp' with {angle} Radians in {watch.ElapsedMilliseconds} Milliseconds");
+        Console.WriteLine($"'sample-image-1920x1080.bmp' with {angle} Radians");
     }
 }
 
 Rotate(1024);
-
-//return;
-
-//BenchmarkRunner.Run<SortBenchmark>();
-
-// BenchmarkSwitcher.FromTypes([typeof(GenericPixelStructureBenchmark<,>)]).RunAllJoined();
 
 
 #pragma warning restore CA1416 // Validate platform compatibility
