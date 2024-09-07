@@ -37,7 +37,6 @@ public unsafe partial class Sorter<TPixel>
 
         private readonly int _offU, _offV;
 
-        private readonly ref nint _indexerReference;
 
 
         public PixelSpan2D(ref TPixel reference, nint[] indices, int maxU, int maxV, double stepU, double stepV,

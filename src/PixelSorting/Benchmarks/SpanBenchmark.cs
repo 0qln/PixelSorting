@@ -38,6 +38,7 @@ public class SpanBenchmark
         private const int Width = 1920, Height = 1080;
 
         private readonly Pixel32bitUnion[] _data = new Pixel32bitUnion[Width * Height];
+        private readonly nint[] _indices = new nint[(int)Math.Ceiling(Math.Sqrt(Math.Pow(Width, 2) + Math.Pow(Height, 2))) + 1];
 
 
         [Benchmark]
@@ -46,31 +47,39 @@ public class SpanBenchmark
             for (var i = 0; i < Height; i++)
             {
                 var lo = i * Width;
-                _ = new Span<Pixel32bitUnion>(_data, lo, lo + Width);
+                _ = new Span<Pixel32bitUnion>(_data, lo, Width);
             }
         }
-
-        [Benchmark]
-        public void PixelSpanInit()
-        {
-            for (var i = 0; i < Height; i++)
-            {
-                var lo = i * Width;
-                _ = new Sorter<Pixel32bitUnion>.PixelSpan(_data, 1, lo, lo + Width);
-            }
-        }
+        
+        // [Benchmark]
+        // public void PixelSpanInit()
+        // {
+        //     for (var i = 0; i < Height; i++)
+        //     {
+        //         var lo = i * Width;
+        //         _ = new Sorter<Pixel32bitUnion>.PixelSpan(_data, 1, lo, lo + Width);
+        //     }
+        // }
 
         [Benchmark]
         public void PixelSpan2DInit()
         {
-            var c = Math.Sqrt(Math.Pow(Width, 2) + Math.Pow(Height, 2));
-            var indices = new nint[(int)Math.Ceiling(c) + 1];
-
             for (var i = 0; i < Height; i++)
             {
-                _ = new Sorter<Pixel32bitUnion>.PixelSpan2D(_data, indices, Width, Height, 1, 0, 0, i);
+                _ = new Sorter<Pixel32bitUnion>.PixelSpan2D(ref _data[0], _indices, Width, Height, 1, 0, 0, i);
             }
         }
+
+//         [Benchmark]
+//         public void PixelSpan2DInitLegacy0()
+//         {
+//             for (var i = 0; i < Height; i++)
+//             {
+// #pragma warning disable CS0618 // Type or member is obsolete
+//                 _ = new Sorter<Pixel32bitUnion>.PixelSpan2D(ref _data[0], _indices, Width, Height, 1, 0, 0, i, LEGACY: true);
+// #pragma warning restore CS0618 // Type or member is obsolete
+//             }
+//         }
     }
 
 
@@ -135,5 +144,31 @@ public class SpanBenchmark
         //     var instance = _data.First();
         //     // Sorter<Pixel32bitUnion>.InsertionSort(new Span<int>(instance.Unsorted), _comparer, instance.Properties.Step, instance.Properties.From, instance.Properties.To);
         // }
+
+        private const int Width = 1920, Height = 1080;
+
+        private readonly Pixel32bitUnion[] _data = new Pixel32bitUnion[Width * Height];
+        private readonly nint[] _indices = new nint[(int)Math.Ceiling(Math.Sqrt(Math.Pow(Width, 2) + Math.Pow(Height, 2))) + 1];
+
+        // While testing, unnecessary code was removed from the constructor of span, this the measurements are fair.
+        // Both perform about equal
+
+        [Benchmark]
+        public void PixelSpan2DAccessCompute()
+        {
+            var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(ref _data[0], _indices, Width, Height, 1, 0, 0, 0);
+
+            for (uint i = 0; i < span.ItemCount; i++)
+                span.MapIndex(i);
+        } 
+
+        [Benchmark]
+        public void PixelSpan2DAccessLookup()
+        {
+            var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(ref _data[0], _indices, Width, Height, 1, 0, 0, 0);
+
+            for (uint i = 0; i < span.ItemCount; i++)
+                span.LookupIndex(i);
+        } 
     }
 }
