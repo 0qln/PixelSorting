@@ -252,6 +252,24 @@ public unsafe partial class Sorter<TPixel>
             }
         }
 
+        /// <summary>
+        /// Get a reference to an item by index, calculated using u, v steps from initiation.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public ref TPixel this[int i]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (i >= _itemCount || i < 0)
+                    throw new IndexOutOfRangeException();
+
+                return ref Unsafe.Add(ref _reference, MapIndex((uint)i) );
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint MapIndex(uint i)
         {

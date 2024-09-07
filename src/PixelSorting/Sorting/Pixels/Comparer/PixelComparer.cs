@@ -98,10 +98,11 @@ public abstract class PixelComparer
             /// <summary> 32 bit pixel format. </summary>
             public int Compare(Pixel32bitUnion a, Pixel32bitUnion b)
             {
-                // `result` is a valid comparison in floating point notation.
-                var result = a.GetHue() - b.GetHue();
+                // a valid comparison in floating point notation.
+                return (int)Math.Round(a.Hue) - (int)Math.Round(b.Hue);
+                
                 // In order to cast to int, without data loss, scale and round the float.
-                return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
+                // return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
             }
 
             /// <summary> 24 bit pixel format. </summary>

@@ -18,8 +18,6 @@ public unsafe class Sorter8Bit(Pixel8bit* byteDataBegin, int width, int height, 
 public unsafe partial class Sorter<TPixel>
     where TPixel : struct
 {
-    // TODO: unit test that each angle of pixels does not overlap any other when iterating.
-
     // Using closures and delegates at this stage would be nice, but they 
     // only use SHO, as the closure object is generated at compile time.
     public readonly struct AngleSorterInfo : ICloneable
@@ -65,7 +63,10 @@ public unsafe partial class Sorter<TPixel>
     /// <summary>
     /// The parallelization options.
     /// </summary>
-    public ParallelOptions ParallelOpts { get; set; } = new() { MaxDegreeOfParallelism = -1 };
+    public ParallelOptions ParallelOpts { get; set; } = new()
+    {
+        MaxDegreeOfParallelism = -1
+    };
 
 
     /// <summary>
@@ -206,10 +207,10 @@ public unsafe partial class Sorter<TPixel>
     /// <param name="sorterInfo">The sort function.</param>
     public void SortAngle(double alpha, AngleSorterInfo sorterInfo)
     {
+#if DEBUG
         // the diagonal of the pixel-rect.
         var c = Math.Sqrt(Math.Pow(_imageWidth, 2) + Math.Pow(_imageHeight, 2));
 
-#if DEBUG
         // the base length of the triangle formed by alpha + pixel-rect height.
         double BaseA(double angle) => c * Math.Sin(angle);
 

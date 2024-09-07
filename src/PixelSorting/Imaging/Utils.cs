@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
+using Sorting;
 using TestDataGenerator;
 
 namespace Imaging;
@@ -9,6 +10,89 @@ public class Utils
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
+
+    public static void VisualizeOverlap(double alpha)
+    {
+        var tanAlpha = Math.Tan(alpha);
+        var imageHeight = 1080;
+        var imageWidth = 1920;
+        var checks = new int[imageHeight * imageWidth];
+
+        void DoRun(double stepU, double stepV, int offU, int offV)
+        {
+            Sorter<int>.PixelSpan2D span = new(checks, imageWidth, imageHeight, stepU, stepV, offU, offV);
+            for (int i = 0; i < span.ItemCount; i++)
+            {
+                span[i] += 10;
+            }
+        }
+
+        switch (alpha)
+        {
+            case 0:
+            {
+                for (var i = 0; i < imageWidth; i++)
+                    DoRun(0, 1, i, 0);
+                break;
+            }
+            case > 0 and < Math.PI / 2:
+            {
+                // left
+                for (var i = 0; i < imageHeight; i++)
+                    DoRun(1, 1 / tanAlpha, 0, i);
+
+                // top
+                if (alpha > Math.PI / 4)
+                {
+                    for (var i = 0; i < imageWidth; i++)
+                        DoRun(1, 1 / tanAlpha, i, 0);
+                }
+                else
+                {
+                    for (var i = 0; i < imageWidth; i++)
+                        DoRun(tanAlpha, 1, i, 0);
+                }
+
+                break;
+            }
+            case Math.PI / 2:
+            {
+                for (var i = 0; i < imageHeight; i++)
+                    DoRun(1, 0, 0, i);
+                break;
+            }
+            case > Math.PI / 2 and < Math.PI:
+            {
+                // top
+                for (var i = 0; i < imageWidth; i++)
+                {
+                    DoRun(tanAlpha, 1, i, 0);
+                }
+
+                // right
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (var i = 0; i < imageHeight; i++)
+                        DoRun(tanAlpha, 1, imageWidth - 1, i);
+                }
+                else
+                {
+                    for (var i = 0; i < imageHeight; i++)
+                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
+                }
+
+                break;
+            }
+            case Math.PI:
+            {
+                for (var i = 0; i < imageWidth; i++)
+                    DoRun(0, 1, i, 0);
+                break;
+            }
+        }
+
+        Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-overlap.png", pixel => (255, (byte)pixel, (byte)pixel, (byte)pixel));
+    }
         
         
     public delegate TPixel PixelCreator<TPixel>(byte A, byte R, byte G, byte B);
@@ -30,6 +114,24 @@ public class Utils
 
         bmp.Save(path);
     }
+
+    public static void Save<TPixel>(TPixel[] pixels, int width, int height, string path, PixelExtractor<TPixel> pixelExtractor)
+    {
+        var bmp = new Bitmap(width, height);
+
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                var p = pixelExtractor(pixels[y * width + x]);
+                bmp.SetPixel(x, y, Color.FromArgb(p.A, p.R, p.G, p.B));
+            }
+        }
+
+        bmp.Save(path);
+    }
+
+
     public static void Load<TPixel>(TPixel[,] pixels, string path, PixelCreator<TPixel> pixelCreator)
         where TPixel : struct
     {

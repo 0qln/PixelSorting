@@ -16,38 +16,38 @@ public struct Pixel32bitUnion
     [FieldOffset(1)] public byte G;
     [FieldOffset(2)] public byte R;
     [FieldOffset(3)] public byte A;
-        
-    public readonly int GrayScale()
-    {
-        return (R + G + B) / 3;
-    }
+
+    public readonly int GrayScale => (R + G + B) / 3;
 
     /// <summary>
     /// Calculate the hue of this pixel.
     /// </summary>
     /// <returns></returns>
-    public float GetHue()
+    public float Hue
     {
-        if (R == G && G == B)
-            return 0f;
+        get
+        {
+            if (R == G && G == B)
+                return 0f;
 
-        MinMaxRgb(out var min, out var max);
+            MinMaxRgb(out var min, out var max);
 
-        float delta = max - min;
-        float hue;
+            float delta = max - min;
+            float hue;
 
-        if (R == max)
-            hue = (G - B) / delta;
-        else if (G == max)
-            hue = (B - R) / delta + 2f;
-        else
-            hue = (R - G) / delta + 4f;
+            if (R == max)
+                hue = (G - B) / delta;
+            else if (G == max)
+                hue = (B - R) / delta + 2f;
+            else
+                hue = (R - G) / delta + 4f;
 
-        hue *= 60f;
-        if (hue < 0f)
-            hue += 360f;
+            hue *= 60f;
+            if (hue < 0f)
+                hue += 360f;
 
-        return hue;
+            return hue;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -63,6 +63,7 @@ public struct Pixel32bitUnion
             max = G;
             min = R;
         }
+
         if (B > max)
         {
             max = B;

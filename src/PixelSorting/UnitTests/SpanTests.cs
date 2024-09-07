@@ -110,9 +110,9 @@ public class SpanTests
     {
         var data = new Pixel32bitUnion[Math.Max(maxU * maxV, 1)];
         var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(
-            data, maxU, maxV, 
+            data, maxU, maxV,
             new Sorter<Pixel32bitUnion>.Fraction(numU, denU),
-            new Sorter<Pixel32bitUnion>.Fraction(numV, denV), 
+            new Sorter<Pixel32bitUnion>.Fraction(numV, denV),
             offU, offV);
 
         Assert.Equal(
@@ -133,9 +133,9 @@ public class SpanTests
     {
         var data = new Pixel32bitUnion[Math.Max(maxU * maxV, 1)];
         var span = new Sorter<Pixel32bitUnion>.PixelSpan2D(
-            data, maxU, maxV, 
+            data, maxU, maxV,
             new Sorter<Pixel32bitUnion>.Fraction(numU, denU),
-            new Sorter<Pixel32bitUnion>.Fraction(numV, denV), 
+            new Sorter<Pixel32bitUnion>.Fraction(numV, denV),
             offU, offV);
 
         Assert.Equal(expected, span.CalculateItemCount());
@@ -151,5 +151,95 @@ public class SpanTests
 
         for (uint i = 0; i < span.ItemCount; i++)
             Assert.Equal(span.MapIndex(i), span.LookupIndex(i));
+    }
+
+    /// <summary>
+    /// Asserts that each angle of pixels does not overlap with any other when iterating.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(0.0314159265358979340000000000)]
+    [InlineData(1.4451326206513060000000000000)]
+    [InlineData(Math.PI)]
+    public void Test_AtomicIndexing(double alpha)
+    {
+        var tanAlpha = Math.Tan(alpha);
+        var imageHeight = 1080;
+        var imageWidth = 1920;
+        var checks = new bool[imageHeight * imageWidth];
+
+        void AssertRun(double stepU, double stepV, int offU, int offV)
+        {
+            Sorter<bool>.PixelSpan2D span = new(checks, imageWidth, imageHeight, stepU, stepV, offU, offV);
+            for (int i = 0; i < span.ItemCount; i++)
+            {
+                Assert.False(span[i]);
+                span[i] = true;
+            }
+        }
+
+        switch (alpha)
+        {
+            case 0:
+            {
+                for (var i = 0; i < imageWidth; i++)
+                    AssertRun(0, 1, i, 0);
+                break;
+            }
+            case > 0 and < Math.PI / 2:
+            {
+                // left
+                for (var i = 0; i < imageHeight; i++)
+                    AssertRun(1, 1 / tanAlpha, 0, i);
+
+                // top
+                if (alpha > Math.PI / 4)
+                {
+                    for (var i = 0; i < imageWidth; i++)
+                        AssertRun(1, 1 / tanAlpha, i, 0);
+                }
+                else
+                {
+                    for (var i = 0; i < imageWidth; i++)
+                        AssertRun(tanAlpha, 1, i, 0);
+                }
+
+                break;
+            }
+            case Math.PI / 2:
+            {
+                for (var i = 0; i < imageHeight; i++)
+                    AssertRun(1, 0, 0, i);
+                break;
+            }
+            case > Math.PI / 2 and < Math.PI:
+            {
+                // top
+                for (var i = 0; i < imageWidth; i++)
+                {
+                    AssertRun(tanAlpha, 1, i, 0);
+                }
+
+                // right
+                if (alpha > Math.PI / 2 + Math.PI / 4)
+                {
+                    for (var i = 0; i < imageHeight; i++)
+                        AssertRun(tanAlpha, 1, imageWidth - 1, i);
+                }
+                else
+                {
+                    for (var i = 0; i < imageHeight; i++)
+                        AssertRun(-1, -1 / tanAlpha, imageWidth - 1, i);
+                }
+
+                break;
+            }
+            case Math.PI:
+            {
+                for (var i = 0; i < imageWidth; i++)
+                    AssertRun(0, 1, i, 0);
+                break;
+            }
+        }
     }
 }
