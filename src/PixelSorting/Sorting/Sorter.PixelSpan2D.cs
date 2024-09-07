@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Utils;
 
@@ -25,8 +26,14 @@ public unsafe partial class Sorter<TPixel>
         /// <summary>The number of elements this span operates on.</summary>
         private readonly uint _itemCount;
 
-        private readonly double _stepU;
-        private readonly double _stepV;
+        /// <summary>
+        /// One of these is guaranteed to be either 1 or -1.
+        /// </summary>
+        private readonly double _stepU, _stepV;
+
+#if DEBUG
+        private readonly Fraction _fStepU, _fStepV;
+#endif
 
         private readonly int _offU, _offV;
 
@@ -52,11 +59,7 @@ public unsafe partial class Sorter<TPixel>
 
             // The buffer to store the index map is maintained by the caller, allocating a new buffer
             // for each span creates too much overhead.
-            // The fast estimate is sometimes inaccurate => add buffer.
-            if (indices.Length < FastEstimateItemCount() + 1)
-            {
-                throw new ArgumentException(nameof(indices));
-            }
+            Debug.Assert(indices.Length >= EstimateItemCount());
 
             _reference = ref reference;
             _indexerReference = ref indices[0];
@@ -69,7 +72,7 @@ public unsafe partial class Sorter<TPixel>
             double u = _offU, v = _offV;
             while (u < SizeU && v < SizeV && u >= 0 && v >= 0)
             {
-                // Inlining the span access on the `indices` array.
+                // Inlining the span access on the `indices` array. Skip the bounds check.
                 // We shouldn't get a AccessViolation here, as we checked earlier, that the index map is big enough.
                 Debug.Assert(i < indices.Length);
                 ref var index = ref Unsafe.Add(ref _indexerReference, (nint)i++);
@@ -82,26 +85,71 @@ public unsafe partial class Sorter<TPixel>
         }
 
 
-        public PixelSpan2D(TPixel[] reference, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU,
-            int offV)
+        public PixelSpan2D(TPixel[] reference, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             : this(ref reference[0], indices, maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(Span<TPixel> reference, nint[] indices, int maxU, int maxV, double stepU, double stepV,
+#if DEBUG
+        public PixelSpan2D(
+            TPixel[] reference, nint[] indices, 
+            int maxU, int maxV, 
+            Fraction fStepU, Fraction fStepV, 
             int offU, int offV)
+            : this(
+                ref reference[0], indices,
+                maxU, maxV, 
+                (double)fStepU, 
+                (double)fStepV, 
+                offU, offV)
+        {
+            // if (denU == 0 || denV == 0)
+            // {
+            //     throw new DivideByZeroException();
+            // }
+            //
+            // // stepU and stepV are normalized => The fraction form of
+            // // stepU and stepV has to be normalized as well.
+            // if (BigInteger.Abs(numU * denV) > BigInteger.Abs(numV * denU))
+            // {
+            //     // U is greater than V.
+            //     // Normalize wrt. U.
+            //     _numU = numU * BigInteger.Abs(denU);
+            //     _denU = denU * BigInteger.Abs(numU);
+            //     _numV = numV * BigInteger.Abs(denU);
+            //     _denV = denV * BigInteger.Abs(numU);
+            // }
+            // else
+            // {
+            //     // V is the larger than U, 
+            //     // or they are equal (Then it doesn't matter which one we pick as max).
+            //     // Normalize wrt. V.
+            //     _numU = numU * BigInteger.Abs(denV);
+            //     _denU = denU * BigInteger.Abs(numV);
+            //     _numV = numV * BigInteger.Abs(denV);
+            //     _denV = denV * BigInteger.Abs(numV);
+            // }
+
+            // The step dimensions need to be normalized in order for the index map to draw out a straight
+            // line without any gaps.
+            Debug.Assert(!fStepU.IsZero || !fStepV.IsZero);
+            var max = Fraction.Max(fStepU.Abs(), fStepV.Abs());
+            _fStepU = fStepU / max;
+            _fStepV = fStepV / max;
+        }
+#endif
+
+        public PixelSpan2D(Span<TPixel> reference, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             : this(ref reference[0], indices, maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(void* pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU,
-            int offV)
+        public PixelSpan2D(void* pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             : this(ref *((TPixel*)pointer), indices, maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(nint pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU,
-            int offV)
+        public PixelSpan2D(nint pointer, nint[] indices, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
             : this(ref *((TPixel*)pointer), indices, maxU, maxV, stepU, stepV, offU, offV)
         {
         }
@@ -109,13 +157,11 @@ public unsafe partial class Sorter<TPixel>
 
         /// <summary>
         /// Generates an estimate of how many items this span will operate on.
+        /// Prone to floating point inaccuracy.
         /// </summary>
-        public int FastEstimateItemCount()
+        public int EstimateItemCount()
         {
             Debug.Assert(_stepU != 0 || _stepV != 0);
-
-            if (_sizeU == 0 || _sizeV == 0)
-                return 0;
 
             // Possible slots in direction u
             var uSlots = _stepU switch
@@ -137,78 +183,30 @@ public unsafe partial class Sorter<TPixel>
             return (int)Math.Min(uSlots, vSlots);
         }
 
+#if DEBUG
         /// <summary>
-        /// Generates an estimate of how many items this span will operate on.
+        /// Generates the exact number of items this span will operate on.
+        /// All floating point inaccuracy is eliminated.
         /// </summary>
-        [Obsolete("Use FastEstimateItemCount() instead.")]
-        public int EstimateItemCount()
+        public int CalculateItemCount()
         {
-            var result = 0;
-            double u = _offU, v = _offV;
-            while (u < _sizeU && v < _sizeV && u >= 0 && v >= 0)
+            Fraction u = (Fraction)_offU, v = (Fraction)_offV, sizeU = (Fraction)_sizeU, sizeV = (Fraction)_sizeV;
+            int result = 0;
+
+            do
             {
                 result++;
-                u += _stepU;
-                v += _stepV;
-            }
+                u += _fStepU;
+                v += _fStepV;
+            } 
+            while (
+                u < sizeU && u >= Fraction.Zero &&
+                v < sizeV && v >= Fraction.Zero
+            );
 
             return result;
         }
-
-        /// <summary>
-        /// Generates an estimate of how many items this span will operate on.
-        /// </summary>
-        [Obsolete("Use FastEstimateItemCount() instead.")]
-        public int SlowEstimateItemCount()
-        {
-            var result = 0;
-            double u = _offU, v = _offV;
-            while (u < _sizeU && !u.Equals(_sizeU, 0.00000001) && u >= 0 &&
-                   v < _sizeV && !v.Equals(_sizeV, 0.00000001) && v >= 0)
-            {
-                result++;
-                u += _stepU;
-                v += _stepV;
-            }
-
-            return result;
-            // if (_stepU == 0)
-            // {
-            //     var v = (double)(_offV / _stepV);
-            //     while (v * _stepV < _sizeV && v * _stepV >= 0)
-            //     {
-            //         result++;
-            //         v += 1;
-            //     }
-            //
-            //     return result;
-            // }
-            // else if (_stepV == 0)
-            // {
-            //     var u = (double)(_offU / _stepU);
-            //     while (u * _stepU < _sizeU && u * _stepU >= 0)
-            //     {
-            //         result++;
-            //         u += 1;
-            //     }
-            //
-            //     return result;
-            // }
-            // else
-            // {
-            //     var u = (double)(_offU / _stepU);
-            //     var v = (double)(_offV / _stepV);
-            //     while (u * _stepU < _sizeU && u * _stepU >= 0 &&
-            //            v * _stepV < _sizeV && v * _stepV >= 0)
-            //     {
-            //         result++;
-            //         u += 1;
-            //         v += 1;
-            //     }
-            //
-            //     return result;
-            // }
-        }
+#endif
 
         /// <summary>
         /// Get a reference to an item by index, calculated using u, v steps from initiation.
@@ -259,6 +257,145 @@ public unsafe partial class Sorter<TPixel>
         /// </summary>
         public double StepV => _stepV;
     }
+
+#if DEBUG
+    public struct Fraction(BigInteger numerator, BigInteger denominator)
+        : IAdditionOperators<Fraction, Fraction, Fraction>,
+            ISubtractionOperators<Fraction, Fraction, Fraction>,
+            IMultiplyOperators<Fraction, Fraction, Fraction>,
+            IDivisionOperators<Fraction, Fraction, Fraction>
+    {
+        private BigInteger _denominator = denominator;
+
+        public BigInteger Numerator { get; set; } = numerator;
+
+        public BigInteger Denominator
+        {
+            readonly get => _denominator;
+            set
+            {
+                if (value == 0) 
+                    throw new DivideByZeroException();
+
+                if (value < 0)
+                {
+                    // The sign should be noted in the numerator.
+                    value = -value;
+                    Numerator = -Numerator;
+                }
+
+                _denominator = value;
+            }
+        }
+
+        public bool IsZero => Numerator == 0;
+
+        public bool IsNegative => Numerator < 0;
+
+        public bool IsPositive => Numerator > 0;
+
+        public static Fraction Zero => new() { Numerator = 0, Denominator = 1 };
+
+
+        public static Fraction operator +(Fraction left, Fraction right) =>
+            new()
+            {
+                Numerator = left.Numerator * right.Denominator + right.Numerator * left.Denominator,
+                Denominator = left.Denominator * right.Denominator
+            };
+
+        public static Fraction operator -(Fraction left, Fraction right) =>
+            new()
+            {
+                Numerator = left.Numerator * right.Denominator - right.Numerator * left.Denominator,
+                Denominator = left.Denominator * right.Denominator
+            };
+
+        public static Fraction operator *(Fraction left, Fraction right) =>
+            new()
+            {
+                Numerator = left.Numerator * right.Numerator,
+                Denominator = left.Denominator * right.Denominator,
+            };
+
+        public static Fraction operator /(Fraction left, Fraction right) =>
+            new()
+            {
+                Numerator = left.Numerator * right.Denominator,
+                Denominator = left.Denominator * right.Numerator
+            };
+
+        public static explicit operator double(Fraction fraction) => 
+            (double)fraction.Numerator / (double)fraction.Denominator;
+
+        public Fraction Abs() => this with { Numerator = BigInteger.Abs(Numerator), };
+
+        public static Fraction Max(Fraction left, Fraction right) => left > right ? left : right;
+
+        public static Fraction Min(Fraction left, Fraction right) => left < right ? left : right;
+
+        public static bool operator <(Fraction left, Fraction right)
+        {
+            if (left.IsZero)
+                return right.IsPositive;
+
+            if (right.IsZero)
+                return left.IsNegative;
+
+            if (left.IsNegative && right.IsPositive)
+                return true;
+
+            if (left.IsPositive && right.IsNegative)
+                return false;
+
+            if (left.IsPositive && right.IsPositive)
+                // This only works if a, b, c and d are positive.
+                return left.Numerator * right.Denominator < right.Numerator * left.Denominator;
+
+            // Both are negative.
+            return -left > -right && left != right;
+        }
+
+        public static bool operator <=(Fraction left, Fraction right) => left < right || left == right;
+
+        public static bool operator >=(Fraction left, Fraction right) => left > right || left == right;
+
+        public static bool operator ==(Fraction left, Fraction right) =>
+            left.Numerator * right.Denominator == right.Numerator * left.Denominator; 
+
+        public static bool operator !=(Fraction left, Fraction right) => !(left == right);
+
+        public static Fraction operator -(Fraction fraction) => fraction with { Numerator = -fraction.Numerator };
+
+        public static bool operator >(Fraction left, Fraction right) {
+            if (left == right)
+                return false;
+
+            if (left.IsZero)
+                return right.IsNegative;
+
+            if (right.IsZero)
+                return left.IsPositive;
+
+            if (left.IsNegative && right.IsPositive)
+                return false;
+
+            if (left.IsPositive && right.IsNegative)
+                return true;
+
+            if (left.IsPositive && right.IsPositive)
+                // This only works if a, b, c and d are positive.
+                return left.Numerator * right.Denominator > right.Numerator * left.Denominator;
+
+            // Both are negative.
+            return -left < -right && left != right;
+        }
+
+        public static explicit operator Fraction(int value) => new() { Numerator = value, Denominator = 1 };
+    }
+#endif
+
+
 }
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type

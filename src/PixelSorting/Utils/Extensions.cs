@@ -1,4 +1,6 @@
-﻿namespace Utils
+﻿using System.Numerics;
+
+namespace Utils
 {
     public static class Extensions
     {
