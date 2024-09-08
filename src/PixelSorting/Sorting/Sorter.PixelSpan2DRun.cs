@@ -47,7 +47,7 @@ public unsafe partial class Sorter<TPixel>
         private int Lo { get; }
 
 
-        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, out bool invalid, int offU, int offV)
+        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
         {
             _reference = ref reference;
             _sizeU = sizeU;
@@ -65,7 +65,7 @@ public unsafe partial class Sorter<TPixel>
             var hasAtleastOne = false;
             for (int i = 0; i < sizeU * sizeV; i++)
             {
-                if (MapIndex(i) is not null)
+                if (MapIndex(i, out _))
                 {
                     hasAtleastOne = true;
                     break;
@@ -73,29 +73,22 @@ public unsafe partial class Sorter<TPixel>
             }
 
             if (!hasAtleastOne)
-            {
-                Console.WriteLine("Empty run.");
-                invalid = true;
-                return;
-            }
-                // throw new ArgumentException("Empty run.");
+                throw new ArgumentException("Empty run.");
 
             int lo = 0;
-            while (MapIndex(lo) is null)
+            while (!MapIndex(lo, out _))
             {
                 lo++;
             }
             
             int hi = lo + 1;
-            while (MapIndex(hi) is not null)
+            while (MapIndex(hi, out _))
             {
                 hi++;
             }
             
             Lo = lo;
             Hi = hi;
-
-            invalid = false;
         }
 
         public ref TPixel this[int i]
@@ -108,33 +101,26 @@ public unsafe partial class Sorter<TPixel>
                 if (i >= Hi)
                     throw new IndexOutOfRangeException();
 
-                return ref Unsafe.Add(ref _reference, MapIndex(i)!.Value);
+                MapIndex(i, out var index);
+                return ref Unsafe.Add(ref _reference, index);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private nint? MapIndex(int i)
+        private bool MapIndex(int i, out nint result)
         {
+            result = 0;
+
             double 
                 u = i * _stepU + _offU,
                 v = i * _stepV + _offV;
 
-            // switch (_shiftTarget)
-            // {
-            //     case ShiftTarget.V:
-            //         v += _shift;
-            //         break;
-            //     case ShiftTarget.U:
-            //         u += _shift;
-            //         break;
-            //     default:
-            //         throw new UnreachableException("Either stepU or stepV is not 1 or -1.");
-            // }
+            if (u < 0 || u >= _sizeU) return false;
+            if (v < 0 || v >= _sizeV) return false;
 
-            if (u < 0 || u >= _sizeU) return null;
-            if (v < 0 || v >= _sizeV) return null;
+            result = (nint)((int)u + (int)v * _sizeU);
 
-            return (nint)((int)u + (int)v * _sizeU);
+            return true;
         }
 
 

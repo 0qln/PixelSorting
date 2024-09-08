@@ -33,8 +33,7 @@ public class Utils
 
         void DoRunNew(double stepU, double stepV, int offU, int offV)
         {
-            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, out var invalid, offU, offV);
-            if (invalid) return;
+            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, offU, offV);
             for (int i = 0; i < span.ItemCount; i++)
             {
                 span[i] = Math.Min(255, span[i] + 20);
