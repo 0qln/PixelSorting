@@ -31,9 +31,10 @@ public class Utils
             // Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-{stepU}-{stepV}-{offU}-{offV}-overlap.bmp", pixel => (255, (byte)(pixel>>0), (byte)(pixel>>0), (byte)pixel));
         }
 
-        void DoRunNew(double stepU, double stepV, int shift)
+        void DoRunNew(double stepU, double stepV, int shift, Sorter<int>.PixelSpan2DRun.ShiftTarget target, int offU, int offV)
         {
-            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, shift);
+            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, shift, out var invalid, target, offU, offV);
+            if (invalid) return;
             for (int i = 0; i < span.ItemCount; i++)
             {
                 span[i] = Math.Min(255, span[i] + 20);
@@ -44,24 +45,102 @@ public class Utils
         {
             case 0:
 
+                // top
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 0, i);
+                    DoRunNew(1, 0, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
 
                 break;
-            case < Math.PI / 2 and > Math.PI / 4:
+
+            case < Math.PI / 4:
+                
+                // left
+                for (var i = 0; i < (int)(imageHeight * tanAlpha); i++)
+                    DoRunNew(tanAlpha, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+
+                // top
+                for (var i = 1; i < imageWidth; i++)
+                    DoRunNew(tanAlpha, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+
+                break;
+
+            case Math.PI / 4:
+
+                // left
+                for (var i = 0; i < imageHeight; i++)
+                    DoRunNew(1, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+
+                // top
+                for (var i = 1; i < imageWidth; i++)
+                    DoRunNew(1, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+
+                break;
+
+            case < Math.PI / 2:
                 
                 // left
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 1 / tanAlpha, i);
-
+                    DoRunNew(1, 1 / tanAlpha, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
+                
                 // top
                 for (var i = 1; i < (int)(imageWidth / tanAlpha); i++)
-                    DoRunNew(1, 1 / tanAlpha, -i);
+                    DoRunNew(1, 1 / tanAlpha, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
 
                 break;
-            case < Math.PI / 2 and <= Math.PI / 4:
+
+            case Math.PI / 2:
+
+                // left
+                for (var i = 0; i < imageHeight; i++)
+                    DoRunNew(1, 0, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
 
                 break;
+
+            case Math.PI / 2 + Math.PI / 4:
+
+                // right
+                for (var i = 0; i < imageHeight; i++)
+                    DoRunNew(-1, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+
+                // top
+                for (var i = 1; i < (int)(imageWidth / -tanAlpha); i++)
+                    DoRunNew(-1, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+
+                break;
+
+            case < Math.PI / 2 + Math.PI / 4:
+
+                // right
+                for (var i = 0; i < imageHeight; i++)
+                    DoRunNew(-1, 1 / -tanAlpha, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+
+                // top
+                for (var i = 1; i < (int)(imageWidth / -tanAlpha); i++)
+                    DoRunNew(-1, 1 / -tanAlpha, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+
+                break;
+
+            case < Math.PI:
+
+                // right 
+                for (var i = 0; i < (int)(imageHeight * -tanAlpha); i++)
+                    DoRunNew(tanAlpha, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, imageWidth - 1, 0);
+
+                // top
+                for (var i = 1; i < imageWidth; i++)
+                    DoRunNew(tanAlpha, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, imageWidth - 1, 0);
+
+                break;
+
+            case Math.PI:
+
+                // top
+                for (var i = 0; i < imageWidth; i++)
+                    DoRunNew(0, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(alpha));
         }
 
         Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-overlap-new.bmp", pixel => (255, (byte)(pixel>>0), (byte)(pixel>>0), (byte)pixel));

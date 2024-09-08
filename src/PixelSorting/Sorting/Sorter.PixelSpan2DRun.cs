@@ -30,6 +30,8 @@ public unsafe partial class Sorter<TPixel>
         /// </summary>
         private readonly int _shift;
 
+        private readonly int _offU, _offV;
+
         /// <summary>
         /// At least one of stepU and steV is normalized to either 1 or -1.
         /// </summary>
@@ -50,13 +52,18 @@ public unsafe partial class Sorter<TPixel>
         /// </summary>
         private int Lo { get; }
 
+        private readonly ShiftTarget _shiftTarget;
 
-        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int shift)
+
+        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int shift, out bool invalid, ShiftTarget shiftTarget, int offU, int offV)
         {
             _reference = ref reference;
             _sizeU = sizeU;
             _sizeV = sizeV;
             _shift = shift;
+            _shiftTarget = shiftTarget;
+            _offU = offU;
+            _offV = offV;
             
             // The step dimensions need to be normalized in order for the index map to draw out a straight
             // line without any gaps.
@@ -76,7 +83,12 @@ public unsafe partial class Sorter<TPixel>
             }
 
             if (!hasAtleastOne)
-                throw new ArgumentException("Empty run.");
+            {
+                Console.WriteLine("Empty run.");
+                invalid = true;
+                return;
+            }
+                // throw new ArgumentException("Empty run.");
 
             int lo = 0;
             while (MapIndex(lo) is null)
@@ -92,7 +104,8 @@ public unsafe partial class Sorter<TPixel>
             
             Lo = lo;
             Hi = hi;
-            
+
+            invalid = false;
         }
 
         public ref TPixel this[int i]
@@ -113,27 +126,28 @@ public unsafe partial class Sorter<TPixel>
         private nint? MapIndex(int i)
         {
             double 
-                u = i * _stepU,
-                v = i * _stepV;
+                u = i * _stepU + _offU,
+                v = i * _stepV + _offV;
 
-            const double tolerance = 0.00001;
+            switch (_shiftTarget)
+            {
+                case ShiftTarget.V:
+                    v += _shift;
+                    break;
+                case ShiftTarget.U:
+                    u += _shift;
+                    break;
+                default:
+                    throw new UnreachableException("Either stepU or stepV is not 1 or -1.");
+            }
 
-            if (Math.Abs(_stepU - 1) < tolerance || Math.Abs(_stepU + 1) < tolerance)
-            {
-                v += _shift;
-            }
-            else if (Math.Abs(_stepV - 1) < tolerance || Math.Abs(_stepV + 1) < tolerance)
-            {
-                u += _shift;
-            }
-            else
-            {
-                throw new UnreachableException("Either stepU or stepV is not 1 or -1.");
-            }
             if (u < 0 || u >= _sizeU) return null;
             if (v < 0 || v >= _sizeV) return null;
 
             return (nint)((int)u + (int)v * _sizeU);
         }
+
+
+        public enum ShiftTarget { V, U }
     }
 }
