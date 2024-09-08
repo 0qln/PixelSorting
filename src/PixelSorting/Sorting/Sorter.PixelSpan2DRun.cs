@@ -24,12 +24,6 @@ public unsafe partial class Sorter<TPixel>
         /// <summary>The side length 2.</summary>
         private readonly int _sizeV;
 
-        /// <summary>
-        /// The shift in either u or v direction.<br/>
-        /// The direction is determined by the step size that is normalized;
-        /// </summary>
-        private readonly int _shift;
-
         private readonly int _offU, _offV;
 
         /// <summary>
@@ -52,16 +46,12 @@ public unsafe partial class Sorter<TPixel>
         /// </summary>
         private int Lo { get; }
 
-        private readonly ShiftTarget _shiftTarget;
 
-
-        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int shift, out bool invalid, ShiftTarget shiftTarget, int offU, int offV)
+        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, out bool invalid, int offU, int offV)
         {
             _reference = ref reference;
             _sizeU = sizeU;
             _sizeV = sizeV;
-            _shift = shift;
-            _shiftTarget = shiftTarget;
             _offU = offU;
             _offV = offV;
             
@@ -129,17 +119,17 @@ public unsafe partial class Sorter<TPixel>
                 u = i * _stepU + _offU,
                 v = i * _stepV + _offV;
 
-            switch (_shiftTarget)
-            {
-                case ShiftTarget.V:
-                    v += _shift;
-                    break;
-                case ShiftTarget.U:
-                    u += _shift;
-                    break;
-                default:
-                    throw new UnreachableException("Either stepU or stepV is not 1 or -1.");
-            }
+            // switch (_shiftTarget)
+            // {
+            //     case ShiftTarget.V:
+            //         v += _shift;
+            //         break;
+            //     case ShiftTarget.U:
+            //         u += _shift;
+            //         break;
+            //     default:
+            //         throw new UnreachableException("Either stepU or stepV is not 1 or -1.");
+            // }
 
             if (u < 0 || u >= _sizeU) return null;
             if (v < 0 || v >= _sizeV) return null;

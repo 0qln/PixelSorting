@@ -31,9 +31,9 @@ public class Utils
             // Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-{stepU}-{stepV}-{offU}-{offV}-overlap.bmp", pixel => (255, (byte)(pixel>>0), (byte)(pixel>>0), (byte)pixel));
         }
 
-        void DoRunNew(double stepU, double stepV, int shift, Sorter<int>.PixelSpan2DRun.ShiftTarget target, int offU, int offV)
+        void DoRunNew(double stepU, double stepV, int offU, int offV)
         {
-            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, shift, out var invalid, target, offU, offV);
+            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, out var invalid, offU, offV);
             if (invalid) return;
             for (int i = 0; i < span.ItemCount; i++)
             {
@@ -47,7 +47,7 @@ public class Utils
 
                 // top
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 0, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
+                    DoRunNew(1, 0, 0, i);
 
                 break;
 
@@ -55,11 +55,11 @@ public class Utils
                 
                 // left
                 for (var i = 0; i < (int)(imageHeight * tanAlpha); i++)
-                    DoRunNew(tanAlpha, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+                    DoRunNew(tanAlpha, 1, -i, 0);
 
                 // top
                 for (var i = 1; i < imageWidth; i++)
-                    DoRunNew(tanAlpha, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+                    DoRunNew(tanAlpha, 1, i, 0);
 
                 break;
 
@@ -67,11 +67,11 @@ public class Utils
 
                 // left
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+                    DoRunNew(1, 1, -i, 0);
 
                 // top
                 for (var i = 1; i < imageWidth; i++)
-                    DoRunNew(1, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+                    DoRunNew(1, 1, i, 0);
 
                 break;
 
@@ -79,11 +79,11 @@ public class Utils
                 
                 // left
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 1 / tanAlpha, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
+                    DoRunNew(1, 1 / tanAlpha, 0, i);
                 
                 // top
                 for (var i = 1; i < (int)(imageWidth / tanAlpha); i++)
-                    DoRunNew(1, 1 / tanAlpha, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
+                    DoRunNew(1, 1 / tanAlpha, 0, -i);
 
                 break;
 
@@ -91,7 +91,7 @@ public class Utils
 
                 // left
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(1, 0, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, 0, 0);
+                    DoRunNew(1, 0, 0, i);
 
                 break;
 
@@ -99,11 +99,11 @@ public class Utils
 
                 // right
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(-1, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+                    DoRunNew(-1, 1, imageWidth - 1, i);
 
                 // top
                 for (var i = 1; i < (int)(imageWidth / -tanAlpha); i++)
-                    DoRunNew(-1, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+                    DoRunNew(-1, 1, imageWidth - 1, -i);
 
                 break;
 
@@ -111,11 +111,11 @@ public class Utils
 
                 // right
                 for (var i = 0; i < imageHeight; i++)
-                    DoRunNew(-1, 1 / -tanAlpha, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+                    DoRunNew(-1, 1 / -tanAlpha, imageWidth - 1, i);
 
                 // top
                 for (var i = 1; i < (int)(imageWidth / -tanAlpha); i++)
-                    DoRunNew(-1, 1 / -tanAlpha, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.V, imageWidth - 1, 0);
+                    DoRunNew(-1, 1 / -tanAlpha, imageWidth - 1, -i);
 
                 break;
 
@@ -123,11 +123,11 @@ public class Utils
 
                 // right 
                 for (var i = 0; i < (int)(imageHeight * -tanAlpha); i++)
-                    DoRunNew(tanAlpha, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, imageWidth - 1, 0);
+                    DoRunNew(tanAlpha, 1, i + imageWidth - 1, 0);
 
                 // top
                 for (var i = 1; i < imageWidth; i++)
-                    DoRunNew(tanAlpha, 1, -i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, imageWidth - 1, 0);
+                    DoRunNew(tanAlpha, 1, -i + imageWidth - 1, 0);
 
                 break;
 
@@ -135,7 +135,7 @@ public class Utils
 
                 // top
                 for (var i = 0; i < imageWidth; i++)
-                    DoRunNew(0, 1, i, Sorter<int>.PixelSpan2DRun.ShiftTarget.U, 0, 0);
+                    DoRunNew(0, 1, i, 0);
 
                 break;
 
