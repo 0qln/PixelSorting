@@ -11,87 +11,132 @@ public class Utils
 #pragma warning disable CA1416 // Validate platform compatibility
 
 
+    static int[] checks = new int[1920 * 1080];
+
     public static void VisualizeOverlap(double alpha)
     {
         var tanAlpha = Math.Tan(alpha);
         var imageHeight = 1080;
         var imageWidth = 1920;
-        var checks = new int[imageHeight * imageWidth];
+        Array.Clear(checks, 0, checks.Length);
 
-        void DoRun(double stepU, double stepV, int offU, int offV)
+        void DoRun(double stepU, double stepV, double offU, double offV)
         {
             Sorter<int>.PixelSpan2D span = new(checks, imageWidth, imageHeight, stepU, stepV, offU, offV);
             for (int i = 0; i < span.ItemCount; i++)
             {
-                span[i] += 10;
+                span[i] = Math.Min(255, span[i] + 20);
+            }
+
+            // Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-{stepU}-{stepV}-{offU}-{offV}-overlap.bmp", pixel => (255, (byte)(pixel>>0), (byte)(pixel>>0), (byte)pixel));
+        }
+
+        void DoRunNew(double stepU, double stepV, int shift)
+        {
+            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, shift);
+            for (int i = 0; i < span.ItemCount; i++)
+            {
+                span[i] = Math.Min(255, span[i] + 20);
             }
         }
 
         switch (alpha)
         {
             case 0:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
+
+                for (var i = 0; i < imageHeight; i++)
+                    DoRunNew(1, 0, i);
+
                 break;
-            }
-            case > 0 and < Math.PI / 2:
-            {
+            case < Math.PI / 2 and > Math.PI / 4:
+                
                 // left
                 for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 1 / tanAlpha, 0, i);
+                    DoRunNew(1, 1 / tanAlpha, i);
 
                 // top
-                if (alpha > Math.PI / 4)
-                {
-                    for (var i = 0; i < imageWidth; i++)
-                        DoRun(1, 1 / tanAlpha, i, 0);
-                }
-                else
-                {
-                    for (var i = 0; i < imageWidth; i++)
-                        DoRun(tanAlpha, 1, i, 0);
-                }
+                for (var i = 1; i < (int)(imageWidth / tanAlpha); i++)
+                    DoRunNew(1, 1 / tanAlpha, -i);
 
                 break;
-            }
-            case Math.PI / 2:
-            {
-                for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 0, 0, i);
-                break;
-            }
-            case > Math.PI / 2 and < Math.PI:
-            {
-                // top
-                for (var i = 0; i < imageWidth; i++)
-                {
-                    DoRun(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(tanAlpha, 1, imageWidth - 1, i);
-                }
-                else
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
-                }
+            case < Math.PI / 2 and <= Math.PI / 4:
 
                 break;
-            }
-            case Math.PI:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
-                break;
-            }
         }
 
-        Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-overlap.png", pixel => (255, (byte)pixel, (byte)pixel, (byte)pixel));
+        Save(checks, imageWidth, imageHeight, $"overlap\\{alpha}-overlap-new.bmp", pixel => (255, (byte)(pixel>>0), (byte)(pixel>>0), (byte)pixel));
+
+        // switch (alpha)
+        // {
+        //     case 0:
+        //     {
+        //         for (var i = 0; i < imageWidth; i++)
+        //             DoRun(0, 1, i, 0);
+        //         break;
+        //     }
+        //     case > 0 and < Math.PI / 2:
+        //     {
+        //                 Console.WriteLine(alpha);
+        //                 Console.WriteLine(tanAlpha);
+        //         Console.WriteLine("LEFT");
+        //         // left
+        //         // for (var i = 0; i < imageHeight - 1; i++)
+        //         //     DoRun(1, 1 / tanAlpha, 0, i);
+        //
+        //         Console.WriteLine("TOP");
+        //
+        //         // top
+        //         if (alpha > Math.PI / 4)
+        //         {
+        //             for (double i = 0; i < imageWidth; i += tanAlpha)
+        //                 DoRun(1, 1 / tanAlpha, i, 0);
+        //             //     var b = imageWidth / tanAlpha;
+        //             // for (var i = 0; i < Math.Min(b, imageHeight) - 1; i++)
+        //             //     DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
+        //         }
+        //         else
+        //         {
+        //             for (var i = 0; i < imageWidth; i++)
+        //                 DoRun(tanAlpha, 1, i, 0);
+        //         }
+        //
+        //         break;
+        //     }
+        //     case Math.PI / 2:
+        //     {
+        //         for (var i = 0; i < imageHeight; i++)
+        //             DoRun(1, 0, 0, i);
+        //         break;
+        //     }
+        //     case > Math.PI / 2 and < Math.PI:
+        //     {
+        //         // top
+        //         for (var i = 0; i < imageWidth; i++)
+        //         {
+        //             DoRun(tanAlpha, 1, i, 0);
+        //         }
+        //
+        //         // right
+        //         if (alpha > Math.PI / 2 + Math.PI / 4)
+        //         {
+        //             for (var i = 0; i < imageHeight; i++)
+        //                 DoRun(tanAlpha, 1, imageWidth - 1, i);
+        //         }
+        //         else
+        //         {
+        //             for (var i = 0; i < imageHeight; i++)
+        //                 DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
+        //         }
+        //
+        //         break;
+        //     }
+        //     case Math.PI:
+        //     {
+        //         for (var i = 0; i < imageWidth; i++)
+        //             DoRun(0, 1, i, 0);
+        //         break;
+        //     }
+        // }
     }
         
         

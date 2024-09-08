@@ -35,7 +35,7 @@ public unsafe partial class Sorter<TPixel>
         private readonly Fraction _fStepU, _fStepV;
 #endif
 
-        private readonly int _offU, _offV;
+        private readonly double _offU, _offV;
 
 #if LEGACY_BENCHMARKING
         private readonly ref nint _indexerRef;
@@ -71,7 +71,7 @@ public unsafe partial class Sorter<TPixel>
 
 
         public PixelSpan2D(ref TPixel reference, int maxU, int maxV, double stepU, double stepV,
-            int offU, int offV)
+            double offU, double offV)
         {
             Debug.Assert(maxU != 0 && maxV != 0);
 
@@ -137,7 +137,7 @@ public unsafe partial class Sorter<TPixel>
         }
 #endif
 
-        public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+        public PixelSpan2D(TPixel[] reference, int maxU, int maxV, double stepU, double stepV, double offU, double offV)
             : this(ref reference[0], maxU, maxV, stepU, stepV, offU, offV)
         {
         }
@@ -148,7 +148,7 @@ public unsafe partial class Sorter<TPixel>
             TPixel[] reference, 
             int maxU, int maxV, 
             Fraction fStepU, Fraction fStepV, 
-            int offU, int offV)
+            int offU, int offV) // TODO: make this fractions
             : this(
                 ref reference[0],
                 maxU, maxV, 
@@ -165,17 +165,17 @@ public unsafe partial class Sorter<TPixel>
         }
 #endif
 
-        public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+        public PixelSpan2D(Span<TPixel> reference, int maxU, int maxV, double stepU, double stepV, double offU, double offV)
             : this(ref reference[0], maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+        public PixelSpan2D(void* pointer, int maxU, int maxV, double stepU, double stepV, double offU, double offV)
             : this(ref *((TPixel*)pointer), maxU, maxV, stepU, stepV, offU, offV)
         {
         }
 
-        public PixelSpan2D(nint pointer, int maxU, int maxV, double stepU, double stepV, int offU, int offV)
+        public PixelSpan2D(nint pointer, int maxU, int maxV, double stepU, double stepV, double offU, double offV)
             : this(ref *((TPixel*)pointer), maxU, maxV, stepU, stepV, offU, offV)
         {
         }
@@ -277,7 +277,7 @@ public unsafe partial class Sorter<TPixel>
                 u = _offU + i * _stepU,
                 v = _offV + i * _stepV;
 
-            return (int)u + (int)v * _sizeU;
+            return (nint)((int)u + (int)(v) * _sizeU);
         }
 
         [Obsolete("Index caching shows not performance improvements.")]
