@@ -18,6 +18,12 @@ public partial class Sorter<TPixel>
         {
             IntrospectiveSort(span, comparer);
         }
+
+        public void Sort(PixelSpan2DRun span)
+        {
+            throw new NotImplementedException();
+            // IntrospectiveSort(span, comparer);
+        }
     }
 
     // This is the threshold where Introspective sort switches to Insertion sort.

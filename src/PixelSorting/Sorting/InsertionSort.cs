@@ -17,6 +17,11 @@ public partial class Sorter<TPixel>
         {
             InsertionSort(span, comparer);
         }
+
+        public void Sort(PixelSpan2DRun span)
+        {
+            InsertionSort(span, comparer);
+        }
     }
 
     /// <summary></summary>
@@ -96,6 +101,56 @@ public partial class Sorter<TPixel>
     /// <param name="lo">Inclusive</param>
     /// <param name="hi">Inclusive</param>
     public static void InsertionSort(PixelSpan2D span, IComparer<TPixel> comparer, uint lo, uint hi)
+    {
+        Debug.Assert(hi < span.ItemCount);
+
+        for (var i = lo; i < hi; ++i)
+        {
+            var t = span[i + 1];
+
+            var j = i;
+            while (j >= lo && comparer.Compare(t, span[j]) < 0)
+            {
+                span[j + 1] = span[j];
+                if (j == 0) break;
+                --j;
+            }
+
+            span[j + 1] = t;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="span"></param>
+    /// <param name="comparer"></param>
+    public static void InsertionSort(PixelSpan2DRun span, IComparer<TPixel> comparer)
+    {
+        for (var i = 0u; i < span.ItemCount - 1; ++i)
+        {
+            var t = span[i + 1];
+
+            var j = i;
+            while (comparer.Compare(t, span[j]) < 0)
+            {
+                span[j + 1] = span[j];
+                if (j == 0) break;
+                --j;
+            }
+
+            span[j + 1] = t;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="span"></param>
+    /// <param name="comparer"></param>
+    /// <param name="lo">Inclusive</param>
+    /// <param name="hi">Inclusive</param>
+    public static void InsertionSort(PixelSpan2DRun span, IComparer<TPixel> comparer, uint lo, uint hi)
     {
         Debug.Assert(hi < span.ItemCount);
 

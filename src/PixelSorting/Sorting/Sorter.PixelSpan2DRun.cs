@@ -47,6 +47,11 @@ public unsafe partial class Sorter<TPixel>
         private uint Lo { get; }
 
 
+        public PixelSpan2DRun(TPixel* reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
+            : this(ref Unsafe.AsRef<TPixel>(reference), sizeU, sizeV, stepU, stepV, offU, offV)
+        {
+        }
+
         public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
         {
             _reference = ref reference;
@@ -65,7 +70,7 @@ public unsafe partial class Sorter<TPixel>
             var hasAtLeastOne = false;
             for (uint i = 0; i < sizeU * sizeV; i++)
             {
-                if (TryMapIndex(i, out _))
+                if (TryMapIndex(i))
                 {
                     hasAtLeastOne = true;
                     break;
@@ -79,11 +84,11 @@ public unsafe partial class Sorter<TPixel>
             }
 
             uint lo = 0;
-            while (!TryMapIndex(lo, out _))
+            while (!TryMapIndex(lo))
                 lo++;
 
             uint hi = lo + 1;
-            while (TryMapIndex(hi, out _))
+            while (TryMapIndex(hi))
                 hi++;
             
             Lo = lo;
@@ -115,18 +120,14 @@ public unsafe partial class Sorter<TPixel>
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryMapIndex(uint i, out uint result)
+        private bool TryMapIndex(uint i)
         {
             double 
                 u = i * _stepU + _offU,
                 v = i * _stepV + _offV;
 
-            result = 0;
-            if (u < 0 || u >= _sizeU) return false;
-            if (v < 0 || v >= _sizeV) return false;
-
-            result = (uint)((int)u + (int)v * _sizeU);
-            return true;
+            return !(u < 0) && !(u >= _sizeU) && 
+                   !(v < 0) && !(v >= _sizeV);
         }
     }
 }
