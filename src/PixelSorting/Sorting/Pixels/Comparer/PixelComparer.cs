@@ -99,8 +99,9 @@ public abstract class PixelComparer
             public int Compare(Pixel32bitUnion a, Pixel32bitUnion b)
             {
                 // a valid comparison in floating point notation.
-                return (int)Math.Round(a.Hue) - (int)Math.Round(b.Hue);
-                
+                // return (int)Math.Round(a.Hue) - (int)Math.Round(b.Hue);
+                return a.Hue.CompareTo(b.Hue);
+
                 // In order to cast to int, without data loss, scale and round the float.
                 // return (int)Math.Round(result * 1000, MidpointRounding.AwayFromZero);
             }

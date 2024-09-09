@@ -62,8 +62,8 @@ unsafe void Rotate(int times)
         Console.Write($"Loaded after {watch.ElapsedMilliseconds}ms, ");
 
         var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
-        // sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(new PixelComparer.Ascending.Hue())));
+        // sorter.SortAngleSync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
+        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(new PixelComparer.Ascending.Hue())));
         Console.Write($"Sorted after {watch.ElapsedMilliseconds}ms, ");
 
         var result = Path.GetFullPath(Path.Combine(
@@ -114,5 +114,13 @@ Rotate(24);
 // RotateRangeVisualizeOverlap(100, Math.PI / 4, Math.PI / 2);
 // RotateVisualizeOverlap(24);
 // Imaging.Utils.VisualizeOverlap(Math.PI / 25);
+
+return;
+var top = 24;
+foreach (var i in Enumerable.Range(1, top))
+{
+    var alpha = Math.PI / top * i;
+    Imaging.Utils.VisualizeOverlap(alpha);
+}
 
 #pragma warning restore CA1416 // Validate platform compatibility

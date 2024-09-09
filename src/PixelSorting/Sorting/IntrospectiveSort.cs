@@ -21,8 +21,7 @@ public partial class Sorter<TPixel>
 
         public void Sort(PixelSpan2DRun span)
         {
-            throw new NotImplementedException();
-            // IntrospectiveSort(span, comparer);
+            IntrospectiveSort(span, comparer);
         }
     }
 
@@ -64,6 +63,12 @@ public partial class Sorter<TPixel>
         IntroSort(keys, comparer, 0, keys.ItemCount - 1, 2 * FloorLog2(keys.ItemCount));
     }
 
+    public static void IntrospectiveSort(PixelSpan2DRun keys, IComparer<TPixel> comparer)
+    {
+        if (keys.ItemCount <= 1) return;
+        IntroSort(keys, comparer, 0, keys.ItemCount - 1, 2 * FloorLog2(keys.ItemCount));
+    }
+
     public static void IntrospectiveSort(PixelSpan2D keys, IComparer<TPixel> comparer)
     {
         if (keys.ItemCount <= 1) return;
@@ -74,6 +79,60 @@ public partial class Sorter<TPixel>
     {
         if (keys.ItemCount <= 1) return;
         IntroSort(keys, comparer, 0, keys.ItemCount - 1, 2 * FloorLog2(keys.ItemCount));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <param name="comparer"></param>
+    /// <param name="lo">Inclusive</param>
+    /// <param name="hi">Inclusive</param>
+    /// <param name="depthLimit"></param>
+    // IntroSort is recursive; block it from being inlined into itself as
+    // this is currenly not profitable.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void IntroSort(PixelSpan2DRun keys, IComparer<TPixel> comparer, uint lo, uint hi, uint depthLimit)
+    {
+        Debug.Assert(hi >= lo);
+
+        while (hi > lo)
+        {
+            var partitionSize = hi - lo + 1;
+            if (partitionSize <= IntrosortSizeThreshold)
+            {
+                Debug.Assert(partitionSize >= 2);
+
+                if (partitionSize == 2)
+                {
+                    SwapIfGreater(keys, comparer, lo, hi);
+                    return;
+                }
+
+                if (partitionSize == 3)
+                {
+                    SwapIfGreater(keys, comparer, lo, hi - 1);
+                    SwapIfGreater(keys, comparer, lo, hi);
+                    SwapIfGreater(keys, comparer, hi - 1, hi);
+                    return;
+                }
+
+                InsertionSort(keys, comparer, lo, hi);
+                return;
+            }
+
+            if (depthLimit == 0)
+            {
+                HeapSort(keys, comparer, lo, hi); 
+                return;
+            }
+
+            depthLimit--;
+
+            var p = PickPivotAndPartition(keys, comparer, lo, hi);
+            IntroSort(keys, comparer, p + 1, hi, depthLimit);
+            hi = p - 1;
+        }
     }
 
     /// <summary>
@@ -324,6 +383,38 @@ public partial class Sorter<TPixel>
         return left;
     }
 
+    private static uint PickPivotAndPartition(PixelSpan2DRun keys, IComparer<TPixel> comparer, uint lo, uint hi)
+    {
+        // Compute median-of-three.  But also partition them, since we've done the comparison.
+        var middle = lo + (hi - lo) / 2;
+
+        // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+        SwapIfGreater(keys, comparer, lo, middle);  // swap the low with the mid point
+        SwapIfGreater(keys, comparer, lo, hi);   // swap the low with the high
+        SwapIfGreater(keys, comparer, middle, hi); // swap the middle with the high
+
+        var pivot = keys[middle];
+        Swap(keys, middle, hi - 1);
+        var left = lo;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+        var right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+        while (left < right)
+        {
+            while (comparer.Compare(keys[++left], pivot) < 0) ;
+            while (comparer.Compare(pivot, keys[--right]) < 0) ;
+
+            if (left >= right)
+                break;
+
+            Swap(keys, left, right);
+        }
+
+        // Put pivot in the right location.
+        Swap(keys, left, hi - 1);
+        return left;
+    }
+
+
     private static uint PickPivotAndPartition(PixelSpan2D keys, IComparer<TPixel> comparer, uint lo, uint hi)
     {
         // Compute median-of-three.  But also partition them, since we've done the comparison.
@@ -445,6 +536,12 @@ public partial class Sorter<TPixel>
         return left;
     }
 
+    private static void Swap(PixelSpan2DRun keys, uint i, uint j)
+    {
+        (keys[i], keys[j]) = (keys[j], keys[i]);
+    }
+
+
     private static void Swap(PixelSpan2D keys, uint i, uint j)
     {
         (keys[i], keys[j]) = (keys[j], keys[i]);
@@ -469,6 +566,18 @@ public partial class Sorter<TPixel>
     {
         (keys[i], keys[j]) = (keys[j], keys[i]);
     }
+
+    private static void SwapIfGreater(PixelSpan2DRun keys, IComparer<TPixel> comparer, uint i, uint j)
+    {
+        if (i != j)
+        {
+            if (comparer.Compare(keys[i], keys[j]) > 0)
+            {
+                (keys[i], keys[j]) = (keys[j], keys[i]);
+            }
+        }
+    }
+
 
     private static void SwapIfGreater(PixelSpan2D keys, IComparer<TPixel> comparer, uint i, uint j)
     {

@@ -47,13 +47,23 @@ public unsafe partial class Sorter<TPixel>
         private uint Lo { get; }
 
 
-        public PixelSpan2DRun(TPixel* reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
-            : this(ref Unsafe.AsRef<TPixel>(reference), sizeU, sizeV, stepU, stepV, offU, offV)
+        public PixelSpan2DRun(TPixel* reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV, bool inverseIndexing = false)
+            : this(ref Unsafe.AsRef<TPixel>(reference), sizeU, sizeV, stepU, stepV, offU, offV, inverseIndexing)
         {
         }
 
-        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
+        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV, bool inverseIndexing = false)
         {
+            if (inverseIndexing)
+            {
+                stepU *= -1;
+                stepV *= -1;
+                offU *= -1;
+                offV *= -1;
+                offU += sizeU - 1;
+                offV += sizeV - 1;
+            }
+
             _reference = ref reference;
             _sizeU = sizeU;
             _sizeV = sizeV;
@@ -66,6 +76,10 @@ public unsafe partial class Sorter<TPixel>
             var max = Math.Max(Math.Abs(stepU), Math.Abs(stepV));
             _stepU = stepU / max;
             _stepV = stepV / max;
+
+
+            // TODO: Optimize these loops away
+            // TODO---------------------------
 
             var hasAtLeastOne = false;
             for (uint i = 0; i < sizeU * sizeV; i++)
@@ -91,6 +105,8 @@ public unsafe partial class Sorter<TPixel>
             while (TryMapIndex(hi))
                 hi++;
             
+            // TODO---------------------------
+
             Lo = lo;
             Hi = hi;
         }

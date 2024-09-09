@@ -26,27 +26,14 @@ public unsafe partial class Sorter<TPixel>
 
         public TPixel* Pixels { get; init; }
 
-        public int ImageWidth { get; init; }
+        internal int ImageWidth { get; init; }
 
-        public int ImageHeight { get; init; }
+        internal int ImageHeight { get; init; }
 
 
-        public AngleSorterInfo Sort(double uStep, double vStep, int uOff, int vOff)
+        public AngleSorterInfo Sort(double uStep, double vStep, int uOff, int vOff, bool inverseIndexing)
         {
-            Sorter.Sort(new PixelSpan2DRun(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff));
-            return this;
-        }
-
-        public AngleSorterInfo SortInv(double uStep, double vStep, int uOff, int vOff)
-        {
-            uStep *= -1;
-            vStep *= -1;
-            uOff *= -1;
-            vOff *= -1;
-            uOff += ImageWidth - 1;
-            vOff += ImageHeight - 1;
-            
-            Sorter.Sort(new PixelSpan2DRun(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff));
+            Sorter.Sort(new PixelSpan2DRun(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff, inverseIndexing));
             return this;
         }
 
@@ -210,7 +197,15 @@ public unsafe partial class Sorter<TPixel>
         }
     }
 
-    public static void DoRun(double alpha, int width, int height, Action<double, double, int, int> action)
+    /// <summary>
+    /// This function is mainly used as a utility function for testing.
+    /// </summary>
+    /// <param name="alpha"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <param name="action"></param>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    internal static void DoRun(double alpha, int width, int height, Action<double, double, int, int, bool> action)
     {
         var tanAlpha = Math.Tan(alpha);
 
@@ -220,19 +215,19 @@ public unsafe partial class Sorter<TPixel>
 
                 // top
                 for (var i = 0; i < width; i++)
-                    action(0, 1, i, 0);
+                    action(0, 1, i, 0, false);
 
                 break;
 
             case < Math.PI / 4:
-                
+
                 // left
-                for (var i = 0; i < height * tanAlpha; i++)
-                    action(tanAlpha, 1, -i, 0);
+                for (var i = 0; i < (int)(height * tanAlpha) + 1; i++)
+                    action(tanAlpha, 1, -i, 0, false);
 
                 // top
                 for (var i = 1; i < width; i++)
-                    action(tanAlpha, 1, i, 0);
+                    action(tanAlpha, 1, i, 0, false);
 
                 break;
 
@@ -240,23 +235,23 @@ public unsafe partial class Sorter<TPixel>
 
                 // left
                 for (var i = 0; i < height; i++)
-                    action(1, 1, -i, 0);
+                    action(1, 1, -i, 0, false);
 
                 // top
                 for (var i = 1; i < width; i++)
-                    action(1, 1, i, 0);
+                    action(1, 1, i, 0, false);
 
                 break;
 
             case < Math.PI / 2:
-                
+
                 // left
                 for (var i = 0; i < height; i++)
-                    action(1, 1 / tanAlpha, 0, i);
-                
+                    action(1, 1 / tanAlpha, 0, i, false);
+
                 // top
-                for (var i = 1; i < width / tanAlpha; i++)
-                    action(1, 1 / tanAlpha, 0, -i);
+                for (var i = 1; i < (int)(width / tanAlpha) + 1; i++)
+                    action(1, 1 / tanAlpha, 0, -i, false);
 
                 break;
 
@@ -264,19 +259,7 @@ public unsafe partial class Sorter<TPixel>
 
                 // left
                 for (var i = 0; i < height; i++)
-                    action(1, 0, 0, i);
-
-                break;
-
-            case Math.PI / 2 + Math.PI / 4:
-
-                // right
-                for (var i = 0; i < height; i++)
-                    action(-1, 1, width - 1, i);
-
-                // top
-                for (var i = 1; i < width / -tanAlpha; i++)
-                    action(-1, 1, width - 1, -i);
+                    action(1, 0, 0, i, false);
 
                 break;
 
@@ -284,23 +267,35 @@ public unsafe partial class Sorter<TPixel>
 
                 // right
                 for (var i = 0; i < height; i++)
-                    action(-1, 1 / -tanAlpha, width - 1, i);
+                    action(-1, 1 / -tanAlpha, width - 1, i, true);
 
                 // top
-                for (var i = 1; i < width / -tanAlpha; i++)
-                    action(-1, 1 / -tanAlpha, width - 1, -i);
+                for (var i = 1; i < (int)(width / -tanAlpha) + 2; i++)
+                    action(-1, 1 / -tanAlpha, width - 1, -i, true);
+
+                break;
+
+            case Math.PI / 2 + Math.PI / 4:
+
+                // right
+                for (var i = 0; i < height; i++)
+                    action(-1, 1, width - 1, i, true);
+
+                // top
+                for (var i = 1; i < (int)(width / -tanAlpha) + 1; i++)
+                    action(-1, 1, width - 1, -i, true);
 
                 break;
 
             case < Math.PI:
 
                 // right 
-                for (var i = 0; i < height * -tanAlpha; i++)
-                    action(tanAlpha, 1, i + width - 1, 0);
+                for (var i = 0; i < (int)(height * -tanAlpha) + 1; i++)
+                    action(tanAlpha, 1, i + width - 1, 0, true);
 
                 // top
                 for (var i = 1; i < width; i++)
-                    action(tanAlpha, 1, -i + width - 1, 0);
+                    action(tanAlpha, 1, -i + width - 1, 0, true);
 
                 break;
 
@@ -308,25 +303,33 @@ public unsafe partial class Sorter<TPixel>
 
                 // top
                 for (var i = 0; i < width; i++)
-                    action(0, 1, i, 0);
+                    action(0, 1, i, 0, false);
 
                 break;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(alpha));
         }
+    }
 
+    public void SortAngle(double alpha, AngleSorterInfo sorterInfo)
+    {
+        DoRun(alpha, _imageWidth, _imageHeight, (ustep, vstep, uoff, voff, invert) =>
+        {
+            sorterInfo.Sort(ustep, vstep, uoff, voff, invert);
+        });
     }
 
     /// <summary>
-    /// Sort the image along the angle <paramref name="alpha"/>, where: 
-    ///     alpha(0) ~ Vertical, 
-    ///     alpha(PI / 2) ~ Horizontal, 
-    ///     alpha(PI) ~ Vertical. 
+    /// Sort the image along the angle <paramref name="alpha"/>,
+    /// where: <br/>
+    ///     alpha(0)      ~ Vertical,   <br/>
+    ///     alpha(PI / 2) ~ Horizontal, <br/>
+    ///     alpha(PI)     ~ Vertical.   <br/>
     /// </summary>
-    /// <param name="alpha">Angle in Radians, element of [ 0 ; PI ]</param>
-    /// <param name="sorterInfo">The sort function.</param>
-    public void SortAngle(double alpha, AngleSorterInfo sorterInfo)
+    /// <param name="alpha">Angle in Radians, element of range [ 0 ; PI ]</param>
+    /// <param name="sorterInfo">The information for sorting, which includes: the sorting method, the sorting comparer, etc.</param>
+    public void SortAngleAsync(double alpha, AngleSorterInfo sorterInfo)
     {
 #if DEBUG
         // the diagonal of the pixel-rect.
@@ -347,45 +350,45 @@ public unsafe partial class Sorter<TPixel>
         switch (alpha)
         {
             case 0:
-                Parallel.For(0, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0), Noop);
+                Parallel.For(0, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0, false), Noop);
                 break;
 
             case < Math.PI / 4:
-                Parallel.For(0, (int)(height * tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, -i, 0), Noop);
-                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i, 0), Noop);
+                Parallel.For(0, (int)(height * tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, -i, 0, false), Noop);
+                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i, 0, false), Noop);
                 break;
 
             case Math.PI / 4:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1, -i, 0), Noop);
-                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1, i, 0), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1, -i, 0, false), Noop);
+                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1, i, 0, false), Noop);
                 break;
 
             case < Math.PI / 2:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, 0, i), Noop);
-                Parallel.For(1, (int)(width / tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, 0, -i), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, 0, i, false), Noop);
+                Parallel.For(1, (int)(width / tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 1 / tanAlpha, 0, -i, false), Noop);
                 break;
 
             case Math.PI / 2:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 0, 0, i), Noop);
-                break;
-
-            case Math.PI / 2 + Math.PI / 4:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1, width - 1, i), Noop);
-                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1, width - 1, -i), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(1, 0, 0, i, false), Noop);
                 break;
 
             case < Math.PI / 2 + Math.PI / 4:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1 / -tanAlpha, width - 1, i), Noop);
-                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1 / -tanAlpha, width - 1, -i), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1 / -tanAlpha, width - 1, i, true), Noop);
+                Parallel.For(1, (int)(width / -tanAlpha) + 2, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1 / -tanAlpha, width - 1, -i, true), Noop);
+                break;
+
+            case Math.PI / 2 + Math.PI / 4:
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1, width - 1, i, true), Noop);
+                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1, width - 1, -i, true), Noop);
                 break;
 
             case < Math.PI:
-                Parallel.For(0, (int)(height * -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(tanAlpha, 1, i + width - 1, 0), Noop);
-                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(tanAlpha, 1, -i + width - 1, 0), Noop);
+                Parallel.For(0, (int)(height * -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i + width - 1, 0, true), Noop);
+                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, -i + width - 1, 0, true), Noop);
                 break;
 
             case Math.PI:
-                Parallel.For(0, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0), Noop);
+                Parallel.For(0, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(0, 1, i, 0, false), Noop);
                 break;
 
             default:
@@ -394,7 +397,9 @@ public unsafe partial class Sorter<TPixel>
 
         return;
 
-        static void Noop(AngleSorterInfo sorterInfo) { }
+        static void Noop(AngleSorterInfo sorterInfo)
+        {
+        }
     }
 
 

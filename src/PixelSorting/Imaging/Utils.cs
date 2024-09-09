@@ -16,14 +16,15 @@ public class Utils
     {
         var imageHeight = 1080;
         var imageWidth = 1920;
-        Array.Clear(checks, 0, checks.Length);
+        Array.Fill(checks, 255);
 
-        Sorter<int>.DoRun(alpha, imageWidth, imageHeight, (stepU, stepV, offU, offV) =>
+        Sorter<int>.DoRun(alpha, imageWidth, imageHeight, (stepU, stepV, offU, offV, invIdx) =>
         {
-            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, offU, offV);
+            Sorter<int>.PixelSpan2DRun span = new(ref checks[0], imageWidth, imageHeight, stepU, stepV, offU, offV, invIdx);
             for (uint i = 0; i < span.ItemCount; i++)
             {
-                span[i] = Math.Min(255, span[i] + 20);
+                // span[i] = Math.Min(255, span[i] + 20);
+                span[i] = 0;
             }
         });
 

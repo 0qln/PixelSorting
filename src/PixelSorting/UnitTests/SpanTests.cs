@@ -156,13 +156,14 @@ public class SpanTests
     [Theory]
     [InlineData(24)]
     [InlineData(36)]
-    public void TestBroadly_AtomicIndexing(int top)
+    public void PixelSpan2DRun_AtomicIndexing_Batch(int top)
     {
         Assert.All(Enumerable.Range(1, top), i =>
         {
             var alpha = Math.PI / top * i;
-            Test_AtomicIndexing(alpha);
+            PixelSpan2DRun_AtomicIndexing(alpha);
         });
+
     }
 
     private const int ImageWidth = 1920;
@@ -178,12 +179,14 @@ public class SpanTests
     [InlineData(Math.PI / 2)]
     [InlineData(Math.PI / 2 + Math.PI / 4)]
     [InlineData(Math.PI)]
-    public void Test_AtomicIndexing(double alpha)
+    [InlineData(Math.PI / 24 * 13)]
+    [InlineData(Math.PI / 24 * 22)]
+    public void PixelSpan2DRun_AtomicIndexing(double alpha)
     {
         Array.Clear(Checks);
-        Sorter<int>.DoRun(alpha, ImageWidth, ImageHeight, (stepU, stepV, offU, offV) =>
+        Sorter<int>.DoRun(alpha, ImageWidth, ImageHeight, (stepU, stepV, offU, offV, invIdx) =>
         {
-            Sorter<int>.PixelSpan2DRun span = new(ref Checks[0], ImageWidth, ImageHeight, stepU, stepV, offU, offV);
+            Sorter<int>.PixelSpan2DRun span = new(ref Checks[0], ImageWidth, ImageHeight, stepU, stepV, offU, offV, invIdx);
             for (uint i = 0; i < span.ItemCount; i++)
             {
                 span[i]++;
