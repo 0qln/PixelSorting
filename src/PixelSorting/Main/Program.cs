@@ -27,7 +27,7 @@ unsafe string RunThrough(double angle, int outPrecision = 6)
     var bmp = Imaging.Utils.GetBitmap(source);
     var data = Imaging.Utils.ExposeData(bmp);
     var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-    sorter.SortAngle(angle, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
+    sorter.SortAngleAsync(angle, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Descending.Red())));
     bmp.Save(result);
 
     return str;
@@ -62,8 +62,8 @@ unsafe void Rotate(int times)
         Console.Write($"Loaded after {watch.ElapsedMilliseconds}ms, ");
 
         var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-        // sorter.SortAngleSync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
-        sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(new PixelComparer.Ascending.Hue())));
+        // sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
+        sorter.SortAngleAsync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(new PixelComparer.Ascending.Hue())));
         Console.Write($"Sorted after {watch.ElapsedMilliseconds}ms, ");
 
         var result = Path.GetFullPath(Path.Combine(

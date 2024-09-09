@@ -46,21 +46,21 @@ public class SortBenchmark
 
          */
 
-        [Benchmark]
-        public unsafe void Unsafe()
-        {
-            var data = Data[0];
-            var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            sorter.SortUnsafe(Math.PI / 2, Comparer);
-        }
-
-        [Benchmark]
-        public unsafe void Safe()
-        {
-            var data = Data[1];
-            var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            sorter.SortSafe(Math.PI / 2, Comparer);
-        }
+        // [Benchmark]
+        // public unsafe void Unsafe()
+        // {
+        //     var data = Data[0];
+        //     var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
+        //     sorter.SortUnsafe(Math.PI / 2, Comparer);
+        // }
+        //
+        // [Benchmark]
+        // public unsafe void Safe()
+        // {
+        //     var data = Data[1];
+        //     var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
+        //     sorter.SortSafe(Math.PI / 2, Comparer);
+        // }
 
     }
 
@@ -92,7 +92,7 @@ public class SortBenchmark
         {
             var data = Data[1];
             var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
-            // sorter.SortAngle(Math.PI / 2, sorter.GetAngleSorterInfo(Sorter32Bit.IntrospectiveSort, Comparer));
+            // sorter.SortAngleAsync(Math.PI / 2, sorter.GetAngleSorterInfo(Sorter32Bit.IntrospectiveSort, Comparer));
         }
 
     }
