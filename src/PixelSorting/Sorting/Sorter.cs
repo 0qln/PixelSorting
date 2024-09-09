@@ -37,6 +37,19 @@ public unsafe partial class Sorter<TPixel>
             return this;
         }
 
+        public AngleSorterInfo SortInv(double uStep, double vStep, int uOff, int vOff)
+        {
+            uStep *= -1;
+            vStep *= -1;
+            uOff *= -1;
+            vOff *= -1;
+            uOff += ImageWidth - 1;
+            vOff += ImageHeight - 1;
+            
+            Sorter.Sort(new PixelSpan2DRun(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff));
+            return this;
+        }
+
         object ICloneable.Clone() => Clone();
 
         public AngleSorterInfo Clone() => this with { Sorter = (ISorter)Sorter.Clone() };
@@ -65,7 +78,7 @@ public unsafe partial class Sorter<TPixel>
     /// </summary>
     public ParallelOptions ParallelOpts { get; set; } = new()
     {
-        MaxDegreeOfParallelism = -1
+        MaxDegreeOfParallelism = 4
     };
 
 
@@ -357,18 +370,18 @@ public unsafe partial class Sorter<TPixel>
                 break;
 
             case Math.PI / 2 + Math.PI / 4:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1, width - 1, i), Noop);
-                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1, width - 1, -i), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1, width - 1, i), Noop);
+                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1, width - 1, -i), Noop);
                 break;
 
             case < Math.PI / 2 + Math.PI / 4:
-                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1 / -tanAlpha, width - 1, i), Noop);
-                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(-1, 1 / -tanAlpha, width - 1, -i), Noop);
+                Parallel.For(0, height, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1 / -tanAlpha, width - 1, i), Noop);
+                Parallel.For(1, (int)(width / -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(-1, 1 / -tanAlpha, width - 1, -i), Noop);
                 break;
 
             case < Math.PI:
-                Parallel.For(0, (int)(height * -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, i + width - 1, 0), Noop);
-                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.Sort(tanAlpha, 1, -i + width - 1, 0), Noop);
+                Parallel.For(0, (int)(height * -tanAlpha) + 1, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(tanAlpha, 1, i + width - 1, 0), Noop);
+                Parallel.For(1, width, ParallelOpts, sorterInfo.Clone, (i, _, info) => info.SortInv(tanAlpha, 1, -i + width - 1, 0), Noop);
                 break;
 
             case Math.PI:

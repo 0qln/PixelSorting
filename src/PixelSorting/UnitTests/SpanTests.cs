@@ -153,12 +153,14 @@ public class SpanTests
             Assert.Equal(span.MapIndex(i), span.LookupIndex(i));
     }
 
-    [Fact]
-    public void TestBroadly_AtomicIndexing()
+    [Theory]
+    [InlineData(24)]
+    [InlineData(36)]
+    public void TestBroadly_AtomicIndexing(int top)
     {
-        Assert.All(Enumerable.Range(1, 360), i =>
+        Assert.All(Enumerable.Range(1, top), i =>
         {
-            double alpha = Math.PI / i;
+            var alpha = Math.PI / top * i;
             Test_AtomicIndexing(alpha);
         });
     }
