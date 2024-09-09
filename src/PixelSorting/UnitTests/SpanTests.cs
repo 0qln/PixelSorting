@@ -153,187 +153,41 @@ public class SpanTests
             Assert.Equal(span.MapIndex(i), span.LookupIndex(i));
     }
 
+    [Fact]
+    public void TestBroadly_AtomicIndexing()
+    {
+        Assert.All(Enumerable.Range(1, 360), i =>
+        {
+            double alpha = Math.PI / i;
+            Test_AtomicIndexing(alpha);
+        });
+    }
+
+    private const int ImageWidth = 1920;
+    private const int ImageHeight = 1080;
+    private static readonly int[] Checks = new int[1920 * 1080];
+
     /// <summary>
     /// Asserts that each angle of pixels does not overlap with any other when iterating.
     /// </summary>
     [Theory]
     [InlineData(0)]
-    [InlineData(0.0314159265358979340000000000)]
-    [InlineData(1.1938052083641222000000000000)]
-    [InlineData(1.4451326206513060000000000000)]
+    [InlineData(Math.PI / 4)]
+    [InlineData(Math.PI / 2)]
+    [InlineData(Math.PI / 2 + Math.PI / 4)]
     [InlineData(Math.PI)]
     public void Test_AtomicIndexing(double alpha)
     {
-        var tanAlpha = Math.Tan(alpha);
-        var imageHeight = 1080;
-        var imageWidth = 1920;
-        var checks = new bool[imageHeight * imageWidth];
-
-        void DoRun(double stepU, double stepV, int offU, int offV)
+        Array.Clear(Checks);
+        Sorter<int>.DoRun(alpha, ImageWidth, ImageHeight, (stepU, stepV, offU, offV) =>
         {
-            Sorter<bool>.PixelSpan2D span = new(checks, imageWidth, imageHeight, stepU, stepV, offU, offV);
-            for (int i = 0; i < span.ItemCount; i++)
+            Sorter<int>.PixelSpan2DRun span = new(ref Checks[0], ImageWidth, ImageHeight, stepU, stepV, offU, offV);
+            for (uint i = 0; i < span.ItemCount; i++)
             {
-                Assert.False(span[i]);
-                span[i] = true;
-            }
-        }
-
-        switch (alpha)
-        {
-            case 0:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
-                break;
-            }
-            case > 0 and < Math.PI / 2:
-            {
-                // left
-                for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 1 / tanAlpha, 0, i);
-
-                // top
-                if (alpha > Math.PI / 4)
-                {
-                    var b = imageWidth / tanAlpha;
-                    for (var i = 0; i < b - 1; i++)
-                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
-                }
-                else
-                {
-                    for (var i = 0; i < imageWidth; i++)
-                        DoRun(tanAlpha, 1, i, 0);
-                }
-
-                break;
-            }
-            case Math.PI / 2:
-            {
-                for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 0, 0, i);
-                break;
-            }
-            case > Math.PI / 2 and < Math.PI:
-            {
-                // top
-                for (var i = 0; i < imageWidth; i++)
-                {
-                    DoRun(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(tanAlpha, 1, imageWidth - 1, i);
-                }
-                else
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
-                }
-
-                break;
-            }
-            case Math.PI:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
-                break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Asserts that each pixel is covered exactly once.
-    /// </summary>
-    [Theory]
-    [InlineData(0)]
-    [InlineData(0.0314159265358979340000000000)]
-    [InlineData(1.1938052083641222000000000000)]
-    [InlineData(1.4451326206513060000000000000)]
-    [InlineData(Math.PI)]
-    public void Test_CoverageIndexing(double alpha)
-    {
-        var tanAlpha = Math.Tan(alpha);
-        var imageHeight = 1080;
-        var imageWidth = 1920;
-        var checks = new int[imageHeight * imageWidth];
-
-        void DoRun(double stepU, double stepV, int offU, int offV)
-        {
-            Sorter<int>.PixelSpan2D span = new(checks, imageWidth, imageHeight, stepU, stepV, offU, offV);
-            for (int i = 0; i < span.ItemCount; i++)
                 span[i]++;
-        }
-
-        switch (alpha)
-        {
-            case 0:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
-                break;
             }
-            case > 0 and < Math.PI / 2:
-            {
-                // left
-                for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 1 / tanAlpha, 0, i);
+        });
 
-                // top
-                if (alpha > Math.PI / 4)
-                {
-                    var b = imageWidth / tanAlpha;
-                    for (var i = 0; i < b - 1; i++)
-                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
-                }
-                else
-                {
-                    for (var i = 0; i < imageWidth; i++)
-                        DoRun(tanAlpha, 1, i, 0);
-                }
-
-                break;
-            }
-            case Math.PI / 2:
-            {
-                for (var i = 0; i < imageHeight; i++)
-                    DoRun(1, 0, 0, i);
-                break;
-            }
-            case > Math.PI / 2 and < Math.PI:
-            {
-                // top
-                for (var i = 0; i < imageWidth; i++)
-                {
-                    DoRun(tanAlpha, 1, i, 0);
-                }
-
-                // right
-                if (alpha > Math.PI / 2 + Math.PI / 4)
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(tanAlpha, 1, imageWidth - 1, i);
-                }
-                else
-                {
-                    for (var i = 0; i < imageHeight; i++)
-                        DoRun(-1, -1 / tanAlpha, imageWidth - 1, i);
-                }
-
-                break;
-            }
-            case Math.PI:
-            {
-                for (var i = 0; i < imageWidth; i++)
-                    DoRun(0, 1, i, 0);
-                break;
-            }
-        }
-
-        Assert.True(checks.All(x => x == 1));
+        Assert.All(Checks, c => Assert.Equal(1, c));
     }
-
 }

@@ -112,7 +112,7 @@ void RotateRangeVisualizeOverlap(int times, double begin, double end)
 
 // Rotate(1024);
 // RotateRangeVisualizeOverlap(100, Math.PI / 4, Math.PI / 2);
-RotateVisualizeOverlap(24);
-// Imaging.Utils.VisualizeOverlap(0.9424777960769382000000000000);
+// RotateVisualizeOverlap(24);
+Imaging.Utils.VisualizeOverlap(Math.PI / 25);
 
 #pragma warning restore CA1416 // Validate platform compatibility

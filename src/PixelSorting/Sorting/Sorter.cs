@@ -197,6 +197,114 @@ public unsafe partial class Sorter<TPixel>
         }
     }
 
+    public static void DoRun(double alpha, int width, int height, Action<double, double, int, int> action)
+    {
+        var tanAlpha = Math.Tan(alpha);
+
+        switch (alpha)
+        {
+            case 0:
+
+                // top
+                for (var i = 0; i < height; i++)
+                    action(1, 0, 0, i);
+
+                break;
+
+            case < Math.PI / 4:
+                
+                // left
+                for (var i = 0; i < height * tanAlpha; i++)
+                    action(tanAlpha, 1, -i, 0);
+
+                // top
+                for (var i = 1; i < width; i++)
+                    action(tanAlpha, 1, i, 0);
+
+                break;
+
+            case Math.PI / 4:
+
+                // left
+                for (var i = 0; i < height; i++)
+                    action(1, 1, -i, 0);
+
+                // top
+                for (var i = 1; i < width; i++)
+                    action(1, 1, i, 0);
+
+                break;
+
+            case < Math.PI / 2:
+                
+                // left
+                for (var i = 0; i < height; i++)
+                    action(1, 1 / tanAlpha, 0, i);
+                
+                // top
+                for (var i = 1; i < width / tanAlpha; i++)
+                    action(1, 1 / tanAlpha, 0, -i);
+
+                break;
+
+            case Math.PI / 2:
+
+                // left
+                for (var i = 0; i < height; i++)
+                    action(1, 0, 0, i);
+
+                break;
+
+            case Math.PI / 2 + Math.PI / 4:
+
+                // right
+                for (var i = 0; i < height; i++)
+                    action(-1, 1, width - 1, i);
+
+                // top
+                for (var i = 1; i < width / -tanAlpha; i++)
+                    action(-1, 1, width - 1, -i);
+
+                break;
+
+            case < Math.PI / 2 + Math.PI / 4:
+
+                // right
+                for (var i = 0; i < height; i++)
+                    action(-1, 1 / -tanAlpha, width - 1, i);
+
+                // top
+                for (var i = 1; i < width / -tanAlpha; i++)
+                    action(-1, 1 / -tanAlpha, width - 1, -i);
+
+                break;
+
+            case < Math.PI:
+
+                // right 
+                for (var i = 0; i < height * -tanAlpha; i++)
+                    action(tanAlpha, 1, i + width - 1, 0);
+
+                // top
+                for (var i = 1; i < width; i++)
+                    action(tanAlpha, 1, -i + width - 1, 0);
+
+                break;
+
+            case Math.PI:
+
+                // top
+                for (var i = 0; i < width; i++)
+                    action(0, 1, i, 0);
+
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(alpha));
+        }
+
+    }
+
     /// <summary>
     /// Sort the image along the angle <paramref name="alpha"/>, where: 
     ///     alpha(0) ~ Vertical, 

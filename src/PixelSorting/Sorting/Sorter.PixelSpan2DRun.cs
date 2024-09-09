@@ -34,17 +34,17 @@ public unsafe partial class Sorter<TPixel>
         /// <summary>
         /// The total number of elements in the run.
         /// </summary>
-        public int ItemCount => Hi - Lo;
+        public uint ItemCount => Hi - Lo;
 
         /// <summary>
         /// Exclusive
         /// </summary>
-        private int Hi { get; }
+        private uint Hi { get; }
 
         /// <summary>
         /// Inclusive
         /// </summary>
-        private int Lo { get; }
+        private uint Lo { get; }
 
 
         public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV)
@@ -62,36 +62,35 @@ public unsafe partial class Sorter<TPixel>
             _stepU = stepU / max;
             _stepV = stepV / max;
 
-            var hasAtleastOne = false;
-            for (int i = 0; i < sizeU * sizeV; i++)
+            var hasAtLeastOne = false;
+            for (uint i = 0; i < sizeU * sizeV; i++)
             {
-                if (MapIndex(i, out _))
+                if (TryMapIndex(i, out _))
                 {
-                    hasAtleastOne = true;
+                    hasAtLeastOne = true;
                     break;
                 }
             }
 
-            if (!hasAtleastOne)
-                throw new ArgumentException("Empty run.");
+            if (!hasAtLeastOne)
+            {
+                Hi = Lo = 0;
+                return;
+            }
 
-            int lo = 0;
-            while (!MapIndex(lo, out _))
-            {
+            uint lo = 0;
+            while (!TryMapIndex(lo, out _))
                 lo++;
-            }
-            
-            int hi = lo + 1;
-            while (MapIndex(hi, out _))
-            {
+
+            uint hi = lo + 1;
+            while (TryMapIndex(hi, out _))
                 hi++;
-            }
             
             Lo = lo;
             Hi = hi;
         }
 
-        public ref TPixel this[int i]
+        public ref TPixel this[uint i]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -101,29 +100,33 @@ public unsafe partial class Sorter<TPixel>
                 if (i >= Hi)
                     throw new IndexOutOfRangeException();
 
-                MapIndex(i, out var index);
-                return ref Unsafe.Add(ref _reference, index);
+                return ref Unsafe.Add(ref _reference, MapIndex(i));
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool MapIndex(int i, out nint result)
+        private uint MapIndex(uint i)
         {
-            result = 0;
-
             double 
                 u = i * _stepU + _offU,
                 v = i * _stepV + _offV;
 
+            return (uint)((int)u + (int)v * _sizeU);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryMapIndex(uint i, out uint result)
+        {
+            double 
+                u = i * _stepU + _offU,
+                v = i * _stepV + _offV;
+
+            result = 0;
             if (u < 0 || u >= _sizeU) return false;
             if (v < 0 || v >= _sizeV) return false;
 
-            result = (nint)((int)u + (int)v * _sizeU);
-
+            result = (uint)((int)u + (int)v * _sizeU);
             return true;
         }
-
-
-        public enum ShiftTarget { V, U }
     }
 }
