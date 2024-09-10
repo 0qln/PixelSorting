@@ -165,12 +165,12 @@ public class SortBenchmark
         return new Sorter<Pixel32bitUnion>.PixelSpan2D(test, size, 1, 1, 0, 0, 0);
     }
 
-    [Benchmark] public void Intro() => Sorter<Pixel32bitUnion>.IntrospectiveSort(PrepareInput(), comparer);
-    [Benchmark] public void Pigeon() => new Sorter<Pixel32bitUnion>.PigeonholeSorter(selector).Sort(PrepareInput());
-    [Benchmark] public void Heap() => Sorter<Pixel32bitUnion>.HeapSort(PrepareInput(), comparer);
-    [Benchmark] public void Insertion() => Sorter<Pixel32bitUnion>.InsertionSort(PrepareInput(), comparer);
-    [Benchmark] public void Comb() => Sorter<Pixel32bitUnion>.CombSort(PrepareInput(), comparer);
-    [Benchmark] public void Shell() => Sorter<Pixel32bitUnion>.ShellSort(PrepareInput(), comparer);
+    // [Benchmark] public void Intro() => Sorter<Pixel32bitUnion>.IntrospectiveSort(PrepareInput(), comparer);
+    // [Benchmark] public void Pigeon() => new Sorter<Pixel32bitUnion>.PigeonholeSorter(selector).Sort(PrepareInput());
+    // [Benchmark] public void Heap() => Sorter<Pixel32bitUnion>.HeapSort(PrepareInput(), comparer);
+    // [Benchmark] public void Insertion() => Sorter<Pixel32bitUnion>.InsertionSort(PrepareInput(), comparer);
+    // [Benchmark] public void Comb() => Sorter<Pixel32bitUnion>.CombSort(PrepareInput(), comparer);
+    // [Benchmark] public void Shell() => Sorter<Pixel32bitUnion>.ShellSort(PrepareInput(), comparer);
 
     #endregion
 }

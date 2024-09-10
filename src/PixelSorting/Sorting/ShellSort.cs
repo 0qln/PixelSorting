@@ -1,14 +1,54 @@
-﻿namespace Sorting;
+﻿using Sorting.Pixels;
+
+namespace Sorting;
 
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
-    // TODO: Increase customizability => pick another squence with more gaps.
+    /// <summary>
+    /// The shell sort algorithm.
+    /// </summary>
+    public class ShellSorter(IPixelComparer<TPixel> comparer) : ISorter
+    {
+        /// <summary>
+        /// Ciura gap sequence.
+        /// </summary>
+        public static readonly uint[] DefaultGaps = [701, 301, 132, 57, 23, 10, 4, 1];
 
-    // Ciura gap sequence
-    private static readonly int[] SHELLSORT_GAPS = [701, 301, 132, 57, 23, 10, 4, 1];
-    public static readonly int ShellPurenessMax = SHELLSORT_GAPS.Length - 1;
+        /// <summary>
+        /// The gaps for the shell sort algorithm.
+        /// Default is the Ciura gap sequence.
+        /// </summary>
+        public uint[] Gaps = [701, 301, 132, 57, 23, 10, 4, 1];
 
+        /// <summary>
+        /// The maximum pureness for the shell sort algorithm.
+        /// </summary>
+        public int ShellPurenessMax => Gaps.Length - 1;
+
+        /// <summary>
+        /// The pureness for the shell sort algorithm.
+        /// </summary>
+        public int Pureness { get; set; }
+
+        public IPixelComparer<TPixel> Comparer { get; set; } = comparer;
+
+        public object Clone()
+        {
+            return new ShellSorter((IPixelComparer<TPixel>)Comparer.Clone());
+        }
+
+        [Obsolete]
+        public void Sort(PixelSpan2D span)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Sort(PixelSpan2DRun span)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
     /// <summary>
     /// Sort the array with a selected level of pureness.
@@ -18,65 +58,50 @@ public partial class Sorter<TPixel>
     /// <param name="lo">Inlcusive</param>
     /// <param name="hi">Exclusive</param>
     /// <param name="pureness">
-    /// An impure span is a not completeley sorted span. Pureness increases overhead in 
-    /// O(n^2) fashion, where n is number of elements in the span. 
+    /// An impure span is a not completely sorted span. Pureness increases overhead in 
+    /// exponentially, where n is number of elements in the span. 
     /// </param>
+    /// <param name="gaps"></param>
     /// <exception cref="ArgumentException"></exception>
-    public static void ShellSort(PixelSpan2D span, IComparer<TPixel> comparer, uint lo, uint hi, int pureness)
+    public static void ShellSort(PixelSpan2DRun span, IComparer<TPixel> comparer, uint lo, uint hi, int pureness, Span<uint> gaps)
     {
-        // if (pureness < 0 || pureness >= SHELLSORT_GAPS.Length)
-        // {
-        //     throw new ArgumentException(nameof(pureness));
-        // }
-        //
-        // for (var gapIndex = 0; gapIndex <= pureness; gapIndex++)
-        // {
-        //     for (int gap = SHELLSORT_GAPS[gapIndex], i = gap + lo; i < hi; i++)
-        //     {
-        //         var temp = span[i];
-        //         var j = i;
-        //
-        //         while ((j >= gap) && (comparer.Compare(temp, span[j - gap]) < 0))
-        //         {
-        //             span[j] = span[j - gap];
-        //             j -= gap;
-        //         }
-        //
-        //         span[j] = temp;
-        //     }
-        // }
-    }
-
-    public static void ShellSort(PixelSpan2D span, IComparer<TPixel> comparer)
-    {
-        // for (var gapIndex = 0; gapIndex < SHELLSORT_GAPS.Length; gapIndex++)
-        // {
-        //     for (int gap = SHELLSORT_GAPS[gapIndex], i = gap; i < span.ItemCount; i++)
-        //     {
-        //         var temp = span[i];
-        //         var j = i;
-        //
-        //         while ((j >= gap) && (comparer.Compare(temp, span[j - gap]) < 0))
-        //         {
-        //             span[j] = span[j - gap];
-        //             j -= gap;
-        //         }
-        //
-        //         span[j] = temp;
-        //     }
-        // }
-    }
-
-    public static void ShellSort(PixelSpan span, IComparer<TPixel> comparer)
-    {
-        for (var gapIndex = 0; gapIndex < SHELLSORT_GAPS.Length; gapIndex++)
+        if (pureness < 0 || pureness >= gaps.Length)
+            throw new ArgumentException(nameof(pureness));
+        
+        for (uint gapIndex = 0; gapIndex <= pureness; gapIndex++)
         {
-            for (int gap = SHELLSORT_GAPS[gapIndex], i = gap; i < span.ItemCount; i++)
+            for (uint gap = gaps[(int)gapIndex], i = gap + lo; i < hi; i++)
+            {
+                var temp = span[i];
+                var j = i;
+        
+                while ((j >= gap) && (comparer.Compare(temp, span[j - gap]) < 0))
+                {
+                    span[j] = span[j - gap];
+                    j -= gap;
+                }
+        
+                span[j] = temp;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shell sort the pixel span.
+    /// </summary>
+    /// <param name="span"></param>
+    /// <param name="comparer"></param>
+    /// <param name="gaps"></param>
+    public static void ShellSort(PixelSpan span, IComparer<TPixel> comparer, uint[] gaps)
+    {
+        for (var gapIndex = 0; gapIndex < gaps.Length; gapIndex++)
+        {
+            for (int gap = (int)gaps[gapIndex], i = gap; i < span.ItemCount; i++)
             {
                 var temp = span[i];
                 var j = i;
 
-                while ((j >= gap) && (comparer.Compare(temp, span[j - gap]) < 0))
+                while (j >= gap && comparer.Compare(temp, span[j - gap]) < 0)
                 {
                     span[j] = span[j - gap];
                     j -= gap;

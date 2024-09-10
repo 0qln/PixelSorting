@@ -1,6 +1,7 @@
 ﻿using Sorting.Pixels.KeySelector;
 
 namespace Sorting;
+
 // TODO?
 
 public partial class Sorter<TPixel>

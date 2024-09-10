@@ -12,6 +12,7 @@ public unsafe partial class Sorter<TPixel>
     /// <summary>
     /// Custom <see cref="Span{T}"/> implementation, specialized for iterating a 2D image.
     /// </summary>
+    [Obsolete("Use PixelSpan2DRun instead.")]
     public readonly ref struct PixelSpan2D
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -441,8 +442,9 @@ public unsafe partial class Sorter<TPixel>
 
 
 }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
+#if EXPERIMENTAL
+
 public unsafe partial class Sorter<TPixel>
     where TPixel : struct
 {
@@ -450,6 +452,7 @@ public unsafe partial class Sorter<TPixel>
     /// Custom `Span<typeparamref name="TPixel"/>` implementation.
     /// </summary>
     /// <typeparam name="TPixel"></typeparam>
+    [Obsolete("Use PixelSpan2D instead.")]
     public readonly ref struct UnsafePixelSpan2D
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -706,4 +709,4 @@ public unsafe partial class Sorter<TPixel>
         }
     }
 }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#endif

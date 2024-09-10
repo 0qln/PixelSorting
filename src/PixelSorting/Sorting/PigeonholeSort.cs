@@ -5,76 +5,85 @@ namespace Sorting;
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
+    /// <summary>
+    /// The pigeonhole sort algorithm.
+    /// Scales very well with large input sizes.
+    /// </summary>
     public class PigeonholeSorter : ISorter
     {
         private readonly IOrderedKeySelector<TPixel> _selector;
-        private readonly List<TPixel>[] _auxilary;
+        private readonly List<TPixel>[] _auxiliary;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="PigeonholeSorter"/> class.
+        /// </summary>
+        /// <param name="selector"></param>
         public PigeonholeSorter(IOrderedKeySelector<TPixel> selector)
         {
             _selector = selector;
-            _auxilary = new List<TPixel>[_selector.GetCardinality()];
-            for (var hole = 0; hole < _auxilary.Length; hole++)
-                _auxilary[hole] = new List<TPixel>();
+            _auxiliary = new List<TPixel>[_selector.GetCardinality()];
+            for (var hole = 0; hole < _auxiliary.Length; hole++)
+                _auxiliary[hole] = new List<TPixel>();
         }
 
         public void Sort(PixelSpan2DRun span)
         {
             var expectedDistribution = span.ItemCount / _selector.GetCardinality();
 
-            for (var hole = 0; hole < _auxilary.Length; hole++)
+            for (var hole = 0; hole < _auxiliary.Length; hole++)
             {
-                _auxilary[hole].EnsureCapacity((int)expectedDistribution);
+                _auxiliary[hole].EnsureCapacity((int)expectedDistribution);
             }
 
             for (uint item = 0; item < span.ItemCount; item++)
             {
                 var pixel = span[item];
-                _auxilary[_selector.GetKey(pixel)].Add(pixel);
+                _auxiliary[_selector.GetKey(pixel)].Add(pixel);
             }
 
             uint i = 0;
-            for (var key = 0; key < _auxilary.Length; key++)
+            for (var key = 0; key < _auxiliary.Length; key++)
             {
-                for (var item = 0; item < _auxilary[key].Count; item++)
+                for (var item = 0; item < _auxiliary[key].Count; item++)
                 {
-                    span[i++] = _auxilary[key][item];
+                    span[i++] = _auxiliary[key][item];
                 }
             }
 
-            for (var hole = 0; hole < _auxilary.Length; hole++)
+            for (var hole = 0; hole < _auxiliary.Length; hole++)
             {
-                _auxilary[hole].Clear();
+                _auxiliary[hole].Clear();
             }
         }
 
+        [Obsolete]
         public void Sort(PixelSpan2D span)
         {
             var expectedDistribution = span.ItemCount / _selector.GetCardinality();
 
-            for (var hole = 0; hole < _auxilary.Length; hole++)
+            for (var hole = 0; hole < _auxiliary.Length; hole++)
             {
-                _auxilary[hole].EnsureCapacity((int)expectedDistribution);
+                _auxiliary[hole].EnsureCapacity((int)expectedDistribution);
             }
 
             for (uint item = 0; item < span.ItemCount; item++)
             {
                 var pixel = span[item];
-                _auxilary[_selector.GetKey(pixel)].Add(pixel);
+                _auxiliary[_selector.GetKey(pixel)].Add(pixel);
             }
 
             uint i = 0;
-            for (var key = 0; key < _auxilary.Length; key++)
+            for (var key = 0; key < _auxiliary.Length; key++)
             {
-                for (var item = 0; item < _auxilary[key].Count; item++)
+                for (var item = 0; item < _auxiliary[key].Count; item++)
                 {
-                    span[i++] = _auxilary[key][item];
+                    span[i++] = _auxiliary[key][item];
                 }
             }
 
-            for (var hole = 0; hole < _auxilary.Length; hole++)
+            for (var hole = 0; hole < _auxiliary.Length; hole++)
             {
-                _auxilary[hole].Clear();
+                _auxiliary[hole].Clear();
             }
         }
 
