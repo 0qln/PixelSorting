@@ -14,6 +14,7 @@
 		<RepositoryUrl>https://github.com/0qln/PixelSorting</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/0qln/PixelSorting</PackageProjectUrl>
 		<Description>A library for high performance and quality pixel sorting on the CPU.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
