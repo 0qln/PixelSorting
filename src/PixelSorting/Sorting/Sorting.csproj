@@ -8,17 +8,23 @@
 		<NoWarn>CS8500</NoWarn>
 		<PackageId>0qln.PixelSorting</PackageId>
 		<Version>1.1.0-alpha</Version>
-		<Author>0qln</Author>
+		<Authors>0qln</Authors>
 		<Product>PixelSorting</Product>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RepositoryUrl>https://github.com/0qln/PixelSorting</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/0qln/PixelSorting</PackageProjectUrl>
-		<Description>A library for high performance and quality pixel sorting on the CPU.</Description>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Description>A library for high performance and quality CPU pixel sorting on the.</Description>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Utils\Utils.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<None Include="..\..\..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\..\LICENSE" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 </Project>
