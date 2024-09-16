@@ -13,7 +13,7 @@ public partial class Sorter<TPixel>
         /// <summary>
         /// Ciura gap sequence.
         /// </summary>
-        public static readonly uint[] DefaultGaps = [701, 301, 132, 57, 23, 10, 4, 1];
+        public static readonly ReadOnlyMemory<uint> DefaultGaps = (uint[])[701, 301, 132, 57, 23, 10, 4, 1];
 
         /// <summary>
         /// The gaps for the shell sort algorithm.
@@ -35,7 +35,11 @@ public partial class Sorter<TPixel>
 
         public object Clone()
         {
-            return new ShellSorter((IPixelComparer<TPixel>)Comparer.Clone());
+            return new ShellSorter((IPixelComparer<TPixel>)Comparer.Clone())
+            {
+                Gaps = Gaps.ToArray(),
+                Pureness = Pureness
+            };
         }
 
         [Obsolete]

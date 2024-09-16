@@ -71,7 +71,7 @@ public class SortingTests
 
         foreach (var test in tests)
         {
-            Sorter<int>.ShellSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer, Sorter<int>.ShellSorter.DefaultGaps);
+            Sorter<int>.ShellSort(new Sorter<int>.PixelSpan(test.Unsorted, test.Properties.Step, test.Properties.From, test.Properties.To), comparer, Sorter<int>.ShellSorter.DefaultGaps.ToArray());
             Assert.True(test.Sorted.SequenceEqual(test.Unsorted, EqualityComparer<int>.Create((a, b) => comparer.Compare(a, b) == 0)));
         }
     }

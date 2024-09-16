@@ -381,7 +381,7 @@ public unsafe partial class Sorter<TPixel>
 
             case Math.PI:
                 Parallel.For(0, width, ParallelOpts, sorterInfo.Clone,
-                    (i, _, info) => info.Sort(0, 1, i, 0, false), Noop);
+                    (i, _, info) => info.Sort(0, 1, i, 0, true), Noop);
                 break;
 
             default:

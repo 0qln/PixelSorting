@@ -23,11 +23,16 @@ public partial class Sorter<TPixel>
         public IPixelComparer<TPixel> Comparer { get; set; } = comparer;
 
 
+        /// <inheritdoc />
         public object Clone()
         {
-            return new CombSorter((IPixelComparer<TPixel>)Comparer.Clone());
+            return new CombSorter((IPixelComparer<TPixel>)Comparer.Clone())
+            {
+                Pureness = Pureness
+            };
         }
 
+        /// <inheritdoc />
         public void Sort(PixelSpan2DRun span)
         {
             if (!Pureness.HasValue)
