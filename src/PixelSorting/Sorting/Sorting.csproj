@@ -7,7 +7,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<NoWarn>CS8500</NoWarn>
 		<PackageId>0qln.PixelSorting</PackageId>
-		<Version>2.0.0-alpha</Version>
+		<Version>1.2.0-pre</Version>
 		<Authors>0qln</Authors>
 		<Product>PixelSorting</Product>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
