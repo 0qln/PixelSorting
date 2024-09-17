@@ -65,18 +65,20 @@ unsafe void Rotate(int times)
         {
             ParallelOpts =
             {
-                MaxDegreeOfParallelism = 1
+                MaxDegreeOfParallelism = 4
             }
         };
         // sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
-        sorter.SortAngleAsync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(
-            new PixelComparer.Ascending.Hue(),
-            new Sorter<Pixel32bitUnion>.Threshold
+        sorter.SortAngleAsync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.ShellSorter(
+            new PixelComparer.Ascending.Hue())
+        {
+            Threshold = new Sorter<Pixel32bitUnion>.Threshold
             {
-                Value = new() { R = 100 },
+                Value = new() { R = 60 },
                 Comparer = new PixelComparer.Ascending.Red()
-            }
-        )));
+            },
+            Pureness = 4
+        }));
         Console.Write($"Sorted after {watch.ElapsedMilliseconds}ms, ");
 
         var result = Path.GetFullPath(Path.Combine(

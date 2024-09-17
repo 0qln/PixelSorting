@@ -6,7 +6,7 @@ namespace Sorting.Pixels._24;
 /// <summary>
 /// </summary>
 [StructLayout(LayoutKind.Explicit)]
-public struct Pixel24bitExplicitStruct : IPixel
+public struct Pixel24bitExplicitStruct
 {
     [FieldOffset(0)] public byte B;
     [FieldOffset(1)] public byte G;
