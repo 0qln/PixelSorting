@@ -153,7 +153,7 @@ public class SortBenchmark
     [ParamsSource(nameof(TestInstancesSource))]
     public int size;
 
-    private IOrderedKeySelector<Pixel32bitUnion> selector = new OrderedKeySelector.Descending.Red();
+    private IKeySelector<Pixel32bitUnion> selector = new OrderedKeySelector.Descending.Red();
     private IComparer<Pixel32bitUnion> comparer = new PixelComparer.Descending.Red();
 
     private Random rng = new Random(857943);

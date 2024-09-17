@@ -6,16 +6,48 @@ namespace Sorting;
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
-    public readonly struct InsertionSorter(IPixelComparer<TPixel> comparer) : ISorter
+    /// <summary>
+    /// The insertion sort algorithm.
+    /// </summary>
+    /// <param name="comparer">
+    /// The comparer to use.
+    /// </param>
+    public class InsertionSorter(IPixelComparer<TPixel> comparer) : ISorter 
     {
+        /// <summary>
+        /// The comparer to use.
+        /// </summary>
+        public IPixelComparer<TPixel> Comparer { get; set; } = comparer;
+
+        /// <summary>
+        /// No pixels below this value will be sorted.
+        /// If <see langword="null"/>, there is no effect.
+        /// </summary>
+        public Threshold? Threshold { get; set; }
+
+
+        /// <inheritdoc />
         public object Clone()
         {
-            return new InsertionSorter((IPixelComparer<TPixel>)comparer.Clone());
+            return new InsertionSorter((IPixelComparer<TPixel>)Comparer.Clone())
+            {
+                Threshold = Threshold
+            };
         }
 
+        /// <inheritdoc />
         public void Sort(PixelSpan2DRun span)
         {
-            InsertionSort(span, comparer);
+            if (Threshold.HasValue)
+            {
+                uint idx = 0;
+                while (span.NextRun(Threshold.Value.Comparer, Threshold.Value.Value, ref idx, out var run))
+                    InsertionSort(run, Comparer);
+            }
+            else
+            {
+                InsertionSort(span, Comparer);
+            }
         }
     }
 

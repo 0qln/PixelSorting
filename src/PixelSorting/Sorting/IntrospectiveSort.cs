@@ -7,29 +7,56 @@ namespace Sorting;
 public partial class Sorter<TPixel>
     where TPixel : struct
 {
+    /// <summary>
+    /// The introspective sort algorithm.
+    /// </summary>
+    /// <param name="comparer">
+    /// The comparer to use.
+    /// </param>
     public class IntrospectiveSorter(IPixelComparer<TPixel> comparer) : ISorter
     {
+        /// <summary>
+        /// The comparer to use.
+        /// </summary>
+        public IPixelComparer<TPixel> Comparer { get; set; } = comparer;
+
+        /// <summary>
+        /// No pixels below this value will be sorted. <br/>
+        /// If <see langword="null"/>, there is no effect.
+        /// </summary>
+        public Threshold? Threshold { get; set; }
+
+
+        /// <inheritdoc />
         public object Clone()
         {
-            return new IntrospectiveSorter((IPixelComparer<TPixel>)comparer.Clone());
+            return new IntrospectiveSorter((IPixelComparer<TPixel>)Comparer.Clone())
+            {
+                Threshold = Threshold
+            };
         }
 
-        [Obsolete]
-        public void Sort(PixelSpan2D span)
-        {
-            IntrospectiveSort(span, comparer);
-        }
-
+        /// <inheritdoc />
         public void Sort(PixelSpan2DRun span)
         {
-            IntrospectiveSort(span, comparer);
+            if (Threshold.HasValue)
+            {
+                uint idx = 0;
+                while (span.NextRun(Threshold.Value.Comparer, Threshold.Value.Value, ref idx, out var run))
+                    IntrospectiveSort(run, Comparer);
+            }
+            else
+            {
+                IntrospectiveSort(span, Comparer);
+            }
         }
     }
 
     // This is the threshold where Introspective sort switches to Insertion sort.
     // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
     // Large value types may benefit from a smaller number.
-    public const int IntrosortSizeThreshold = 16;
+    internal const int IntroSortSizeThreshold = 16;
+
     private static uint FloorLog2(uint n)
     {
         var result = 0u;
@@ -89,7 +116,7 @@ public partial class Sorter<TPixel>
         while (hi > lo)
         {
             var partitionSize = hi - lo + 1;
-            if (partitionSize <= IntrosortSizeThreshold)
+            if (partitionSize <= IntroSortSizeThreshold)
             {
                 Debug.Assert(partitionSize >= 2);
 
@@ -144,7 +171,7 @@ public partial class Sorter<TPixel>
         while (hi > lo)
         {
             var partitionSize = hi - lo + 1;
-            if (partitionSize <= IntrosortSizeThreshold)
+            if (partitionSize <= IntroSortSizeThreshold)
             {
                 Debug.Assert(partitionSize >= 2);
 
@@ -252,7 +279,7 @@ public partial class Sorter<TPixel>
         while (hi > lo)
         {
             var partitionSize = hi - lo + 1;
-            if (partitionSize <= IntrosortSizeThreshold)
+            if (partitionSize <= IntroSortSizeThreshold)
             {
                 if (partitionSize == 1)
                 {

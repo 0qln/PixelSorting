@@ -22,13 +22,20 @@ public partial class Sorter<TPixel>
         /// </summary>
         public IPixelComparer<TPixel> Comparer { get; set; } = comparer;
 
+        /// <summary>
+        /// No pixels below this value will be sorted.
+        /// If <see langword="null" />, there is no effect.
+        /// </summary>
+        public Threshold? Threshold { get; set; }
+
 
         /// <inheritdoc />
         public object Clone()
         {
             return new CombSorter((IPixelComparer<TPixel>)Comparer.Clone())
             {
-                Pureness = Pureness
+                Pureness = Pureness,
+                Threshold = Threshold
             };
         }
 
@@ -37,11 +44,29 @@ public partial class Sorter<TPixel>
         {
             if (!Pureness.HasValue)
             {
-                CombSort(span, Comparer);
+                if (!Threshold.HasValue)
+                {
+                    CombSort(span, Comparer);
+                }
+                else
+                {
+                    uint idx = 0;
+                    while (span.NextRun(Threshold.Value.Comparer, Threshold.Value.Value, ref idx, out var run))
+                        CombSort(run, Comparer);
+                }
             }
             else
             {
-                CombSort(span, Comparer, Pureness.Value);
+                if (!Threshold.HasValue)
+                {
+                    CombSort(span, Comparer, Pureness.Value);
+                }
+                else
+                {
+                    uint idx = 0;
+                    while (span.NextRun(Threshold.Value.Comparer, Threshold.Value.Value, ref idx, out var run))
+                        CombSort(run, Comparer, Pureness.Value);
+                }
             }
         }
     }

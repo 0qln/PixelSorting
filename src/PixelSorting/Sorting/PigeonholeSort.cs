@@ -8,58 +8,56 @@ public partial class Sorter<TPixel>
     /// <summary>
     /// The pigeonhole sort algorithm.
     /// Scales very well with large input sizes.
+    /// Can cause memory issues with very large input sizes. (> 4k images)
     /// </summary>
     public class PigeonholeSorter : ISorter
     {
-        private readonly IOrderedKeySelector<TPixel> _selector;
+        /// <summary>
+        /// The key selector.
+        /// </summary>
+        public IKeySelector<TPixel> Selector { get; }
+
+        /// <summary>
+        /// No pixels below this value will be sorted.
+        /// If <see langword="null" />, there is no effect.
+        /// </summary>
+        public Threshold? Threshold { get; set; }
+
         private readonly List<TPixel>[] _auxiliary;
 
         /// <summary>
         /// Constructs a new instance of the <see cref="PigeonholeSorter"/> class.
         /// </summary>
         /// <param name="selector"></param>
-        public PigeonholeSorter(IOrderedKeySelector<TPixel> selector)
+        public PigeonholeSorter(IKeySelector<TPixel> selector)
         {
-            _selector = selector;
-            _auxiliary = new List<TPixel>[_selector.GetCardinality()];
+            Selector = selector;
+            _auxiliary = new List<TPixel>[Selector.GetCardinality()];
             for (var hole = 0; hole < _auxiliary.Length; hole++)
-                _auxiliary[hole] = new List<TPixel>();
+                // We have no span input yet. So we can't make any guesses 
+                // about the distribution of the input.
+                _auxiliary[hole] = [];
         }
 
+        /// <inheritdoc />
         public void Sort(PixelSpan2DRun span)
         {
-            var expectedDistribution = span.ItemCount / _selector.GetCardinality();
-
-            for (var hole = 0; hole < _auxiliary.Length; hole++)
+            if (Threshold.HasValue)
             {
-                _auxiliary[hole].EnsureCapacity((int)expectedDistribution);
+                // TODO: maybe the auxiliary allocations and capacity checks can be optimized.
+                uint idx = 0;
+                while (span.NextRun(Threshold.Value.Comparer, Threshold.Value.Value, ref idx, out var run))
+                    _Sort(run);
             }
-
-            for (uint item = 0; item < span.ItemCount; item++)
+            else
             {
-                var pixel = span[item];
-                _auxiliary[_selector.GetKey(pixel)].Add(pixel);
-            }
-
-            uint i = 0;
-            for (var key = 0; key < _auxiliary.Length; key++)
-            {
-                for (var item = 0; item < _auxiliary[key].Count; item++)
-                {
-                    span[i++] = _auxiliary[key][item];
-                }
-            }
-
-            for (var hole = 0; hole < _auxiliary.Length; hole++)
-            {
-                _auxiliary[hole].Clear();
+                _Sort(span);
             }
         }
 
-        [Obsolete]
-        public void Sort(PixelSpan2D span)
+        private void _Sort(PixelSpan2DRun span)
         {
-            var expectedDistribution = span.ItemCount / _selector.GetCardinality();
+            var expectedDistribution = span.ItemCount / Selector.GetCardinality();
 
             for (var hole = 0; hole < _auxiliary.Length; hole++)
             {
@@ -69,7 +67,7 @@ public partial class Sorter<TPixel>
             for (uint item = 0; item < span.ItemCount; item++)
             {
                 var pixel = span[item];
-                _auxiliary[_selector.GetKey(pixel)].Add(pixel);
+                _auxiliary[Selector.GetKey(pixel)].Add(pixel);
             }
 
             uint i = 0;
@@ -87,9 +85,10 @@ public partial class Sorter<TPixel>
             }
         }
 
+        /// <inheritdoc />
         public object Clone()
         {
-            return new PigeonholeSorter((IOrderedKeySelector<TPixel>)_selector.Clone());
+            return new PigeonholeSorter((IKeySelector<TPixel>)Selector.Clone());
         }
     }
 }

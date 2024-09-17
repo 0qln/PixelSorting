@@ -61,9 +61,22 @@ unsafe void Rotate(int times)
         var data = Imaging.Utils.ExposeData(bmp);
         Console.Write($"Loaded after {watch.ElapsedMilliseconds}ms, ");
 
-        var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride);
+        var sorter = new Sorter32Bit((Pixel32bitUnion*)data.Scan0, data.Width, data.Height, data.Stride)
+        {
+            ParallelOpts =
+            {
+                MaxDegreeOfParallelism = 1
+            }
+        };
         // sorter.SortAngle(x, sorter.GetAngleSorterInfo(new Sorter32Bit.PigeonholeSorter(new OrderedKeySelector.Ascending.Red())));
-        sorter.SortAngleAsync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(new PixelComparer.Ascending.Hue())));
+        sorter.SortAngleAsync(x, sorter.GetAngleSorterInfo(new Sorter32Bit.IntrospectiveSorter(
+            new PixelComparer.Ascending.Hue(),
+            new Sorter<Pixel32bitUnion>.Threshold
+            {
+                Value = new() { R = 100 },
+                Comparer = new PixelComparer.Ascending.Red()
+            }
+        )));
         Console.Write($"Sorted after {watch.ElapsedMilliseconds}ms, ");
 
         var result = Path.GetFullPath(Path.Combine(

@@ -13,6 +13,10 @@ namespace Sorting;
 public unsafe partial class Sorter<TPixel>
     where TPixel : struct
 {
+    /// <summary>
+    /// A span from an image. <br/>
+    /// Allows for precise indexing along some line in the image.
+    /// </summary>
     public readonly ref struct PixelSpan2DRun
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -34,24 +38,46 @@ public unsafe partial class Sorter<TPixel>
         /// <summary>
         /// The total number of elements in the run.
         /// </summary>
-        public uint ItemCount => Hi - Lo;
+        public uint ItemCount => _hi - _lo;
 
         /// <summary>
         /// Exclusive
         /// </summary>
-        private uint Hi { get; }
+        private readonly uint _hi;
 
         /// <summary>
         /// Inclusive
         /// </summary>
-        private uint Lo { get; }
+        private readonly uint _lo;
 
 
+        /// <summary>
+        /// Creates a new span.
+        /// </summary>
+        /// <param name="reference"></param>
+        /// <param name="sizeU"></param>
+        /// <param name="sizeV"></param>
+        /// <param name="stepU"></param>
+        /// <param name="stepV"></param>
+        /// <param name="offU"></param>
+        /// <param name="offV"></param>
+        /// <param name="inverseIndexing"></param>
         public PixelSpan2DRun(TPixel* reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV, bool inverseIndexing = false)
             : this(ref Unsafe.AsRef<TPixel>(reference), sizeU, sizeV, stepU, stepV, offU, offV, inverseIndexing)
         {
         }
 
+        /// <summary>
+        /// Creates a new span.
+        /// </summary>
+        /// <param name="reference"></param>
+        /// <param name="sizeU"></param>
+        /// <param name="sizeV"></param>
+        /// <param name="stepU"></param>
+        /// <param name="stepV"></param>
+        /// <param name="offU"></param>
+        /// <param name="offV"></param>
+        /// <param name="inverseIndexing"></param>
         public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV, bool inverseIndexing = false)
         {
             if (inverseIndexing)
@@ -93,7 +119,7 @@ public unsafe partial class Sorter<TPixel>
 
             if (!hasAtLeastOne)
             {
-                Hi = Lo = 0;
+                _hi = _lo = 0;
                 return;
             }
 
@@ -107,18 +133,70 @@ public unsafe partial class Sorter<TPixel>
             
             // TODO---------------------------
 
-            Lo = lo;
-            Hi = hi;
+            _lo = lo;
+            _hi = hi;
         }
 
+        /// <summary>
+        /// Creates a slice of the original span.
+        /// </summary>
+        /// <param name="original"></param>
+        /// <param name="lo"></param>
+        /// <param name="hi"></param>
+        public PixelSpan2DRun(PixelSpan2DRun original, uint lo, uint hi)
+        {
+            _reference = ref original._reference;
+            _stepU = original._stepU;
+            _stepV = original._stepV;
+            _sizeU = original._sizeU;
+            _sizeV = original._sizeV;
+            _offU = original._offU;
+            _offV = original._offV;
+            _lo = original._lo + lo;
+            _hi = original._lo + hi;
+
+            Debug.Assert(_hi <= original._hi);
+            Debug.Assert(_lo >= original._lo);
+        }
+        
+        // TODO: unit test this
+        /// <summary>
+        /// Finds the next run starting at <paramref name="idx"/>.
+        /// </summary>
+        /// <param name="comparer"></param>
+        /// <param name="threshold"></param>
+        /// <param name="idx"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public bool NextRun(IComparer<TPixel> comparer, TPixel threshold, ref uint idx, out PixelSpan2DRun result)
+        {
+            // Find lo.
+            var lo = idx;
+            while (lo < ItemCount && comparer.Compare(this[lo], threshold) < 0) ++lo;
+
+            // Find hi.
+            var hi = lo;
+            while (hi < ItemCount && comparer.Compare(this[hi], threshold) >= 0) ++hi;
+
+            idx = hi;
+            result = new(this, lo, hi);
+            return lo < ItemCount;
+        }
+
+        /// <summary>
+        /// Gets the pixel at <paramref name="i"/>.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public ref TPixel this[uint i]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                i += Lo;
+                i += _lo;
 
-                if (i >= Hi)
+                if (i >= _hi)
                     throw new IndexOutOfRangeException();
 
                 return ref Unsafe.Add(ref _reference, MapIndex(i));

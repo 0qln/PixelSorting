@@ -63,7 +63,7 @@ public unsafe partial class Sorter<TPixel>
         /// <returns>The sorted <see cref="AngleSorterInfo"/> object.</returns>
         public AngleSorterInfo Sort(double uStep, double vStep, int uOff, int vOff, bool inverseIndexing)
         {
-            Sorter.Sort(new PixelSpan2DRun(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff, inverseIndexing));
+            Sorter.Sort(new(Pixels, ImageWidth, ImageHeight, uStep, vStep, uOff, vOff, inverseIndexing));
             return this;
         }
 
@@ -414,7 +414,7 @@ public unsafe partial class Sorter<TPixel>
                     var iteratorX = 0;
                     var pixels = new Span<TPixel>(_pixels, _pixelCount);
 
-                    while (NextRowPixelSpan(row, comparer, out var span, ref iteratorX, pixels))
+                    while (NextRowPixelSpan(row, out var span, ref iteratorX, pixels))
                         IntrospectiveSort(span, comparer);
                 }
 
@@ -426,7 +426,7 @@ public unsafe partial class Sorter<TPixel>
                     var iteratorY = 0;
                     var pixels = new Span<TPixel>(_pixels, _pixelCount);
 
-                    while (NextColPixelSpan(col, comparer, out var span, ref iteratorY, pixels))
+                    while (NextColPixelSpan(col, out var span, ref iteratorY, pixels))
                         IntrospectiveSort(span, comparer);
                 }
 
@@ -437,8 +437,7 @@ public unsafe partial class Sorter<TPixel>
 
         return;
 
-        bool NextRowPixelSpan(
-            int y, IComparer<TPixel> comparer, out PixelSpan span, ref int iteratorX, Span<TPixel> pixels)
+        bool NextRowPixelSpan(int y, out PixelSpan span, ref int iteratorX, Span<TPixel> pixels)
         {
             // Remember where we started.
             var begin = iteratorX;
@@ -473,8 +472,7 @@ public unsafe partial class Sorter<TPixel>
             return true;
         }
 
-        bool NextColPixelSpan(
-            int x, IComparer<TPixel> comparer, out PixelSpan span, ref int iteratorY, Span<TPixel> pixels)
+        bool NextColPixelSpan(int x, out PixelSpan span, ref int iteratorY, Span<TPixel> pixels)
         {
             // Remember where we started
             var begin = iteratorY;
