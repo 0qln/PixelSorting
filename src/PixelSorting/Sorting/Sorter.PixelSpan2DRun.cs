@@ -138,6 +138,78 @@ public unsafe partial class Sorter<TPixel>
         }
 
         /// <summary>
+        /// Creates a new span.
+        /// </summary>
+        /// <param name="reference"></param>
+        /// <param name="sizeU"></param>
+        /// <param name="sizeV"></param>
+        /// <param name="stepU"></param>
+        /// <param name="stepV"></param>
+        /// <param name="offU"></param>
+        /// <param name="offV"></param>
+        /// <param name="lo"></param>
+        /// <param name="hi"></param>
+        /// <param name="inverseIndexing"></param>
+        public PixelSpan2DRun(ref TPixel reference, int sizeU, int sizeV, double stepU, double stepV, int offU, int offV, ref uint lo, ref uint hi, bool inverseIndexing = false)
+        {
+            if (inverseIndexing)
+            {
+                stepU *= -1;
+                stepV *= -1;
+                offU *= -1;
+                offV *= -1;
+                offU += sizeU - 1;
+                offV += sizeV - 1;
+            }
+
+            _reference = ref reference;
+            _sizeU = sizeU;
+            _sizeV = sizeV;
+            _offU = offU;
+            _offV = offV;
+            
+            // The step dimensions need to be normalized in order for the index map to draw out a straight
+            // line without any gaps.
+            Debug.Assert(stepU != 0 || stepV != 0);
+            var max = Math.Max(Math.Abs(stepU), Math.Abs(stepV));
+            _stepU = stepU / max;
+            _stepV = stepV / max;
+
+
+            // If the caller keeps track of hi and lo, the loops only iterate
+            // a few times.
+
+            Debug.Assert(hi <= sizeU * sizeV);
+            Debug.Assert(lo >= 0);
+            
+            var hasAtLeastOne = false;
+            for (uint i = lo; i < hi; i++)
+            {
+                if (TryMapIndex(i))
+                {
+                    hasAtLeastOne = true;
+                    break;
+                }
+            }
+
+            if (!hasAtLeastOne)
+            {
+                _hi = _lo = 0;
+                return;
+            }
+
+            while (!TryMapIndex(lo))
+                lo++;
+
+            hi = lo + 1;
+            while (TryMapIndex(hi))
+                hi++;
+
+            _lo = lo;
+            _hi = hi;
+        }
+
+        /// <summary>
         /// Creates a slice of the original span.
         /// </summary>
         /// <param name="original"></param>
@@ -159,7 +231,7 @@ public unsafe partial class Sorter<TPixel>
             Debug.Assert(_lo >= original._lo);
         }
         
-        // TODO: unit test this
+        // TODO: This can be merged with the constructor.
         /// <summary>
         /// Finds the next run starting at <paramref name="idx"/>.
         /// </summary>
